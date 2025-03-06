@@ -1,7 +1,10 @@
+package wechat
+
 import de.fabmax.kool.*
 import de.fabmax.kool.math.Vec2i
 import de.fabmax.kool.pipeline.TexFormat
 import de.fabmax.kool.platform.ImageTextureData
+import utils.jsObj
 import kotlinx.coroutines.CompletableDeferred
 import org.w3c.dom.HTMLImageElement
 import org.w3c.dom.ImageBitmap
@@ -78,7 +81,7 @@ class WxAssetLoader(val basePath: String) : AssetLoader() {
         return if (mime != MimeType.IMAGE_SVG) {
             // raster image type -> fetch blob and create ImageBitmap directly
             val deferred = CompletableDeferred<ImageData>()
-            val canvas = js("wx").createOffscreenCanvas(jsObj {type = "2d"})
+            val canvas = js("wx").createOffscreenCanvas(jsObj { type = "2d" })
             val img = canvas.createImage().unsafeCast<HTMLImageElement>()
             img.onload = {
                 val size = resize ?: Vec2i(img.width, img.height)

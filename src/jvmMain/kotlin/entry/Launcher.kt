@@ -1,6 +1,7 @@
+package entry
+
 import de.fabmax.kool.KoolApplication
 import de.fabmax.kool.KoolConfigJvm
-import template.launchApp
 
 /**
  * JVM main function / app entry point: Creates a new KoolContext (with optional platform-specific configuration) and

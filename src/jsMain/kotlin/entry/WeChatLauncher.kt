@@ -1,40 +1,41 @@
+package entry
+
 import de.fabmax.kool.KoolApplication
 import de.fabmax.kool.KoolConfigJs
 import de.fabmax.kool.pipeline.backend.webgpu.GPUPowerPreference
-import template.launchApp
+import wechat.WxAssetLoader
+import utils.jsObj
+import utils.jsDefineProperty
+import utils.globalThis
 
 private const val CANVAS_NAME = "glCanvas"
 private const val ASSETS_ROOT = "./src/assets"
 
-fun main() = if (!isWeChatEnv()) launch() else weChatMain()
+internal fun isWeChatEnv() = js("(typeof wx) === 'object'") as Boolean
 
-private fun launch() {
-    KoolApplication(
-        config = KoolConfigJs(
-            defaultAssetLoader = WxAssetLoader(ASSETS_ROOT),
-            canvasName = CANVAS_NAME,
-            isJsCanvasToWindowFitting = true,
-            renderBackend = KoolConfigJs.Backend.WEB_GL2,
-            powerPreference = GPUPowerPreference.highPerformance
-        )
-    ) {
-        launchApp(ctx)
-    }
+private fun launch() = KoolApplication(
+    config = KoolConfigJs(
+        defaultAssetLoader = WxAssetLoader(ASSETS_ROOT),
+        canvasName = CANVAS_NAME,
+        isJsCanvasToWindowFitting = true,
+        renderBackend = KoolConfigJs.Backend.WEB_GL2,
+        powerPreference = GPUPowerPreference.highPerformance
+    )
+) {
+    launchApp(ctx)
 }
 
-private fun isWeChatEnv() = js("(typeof wx) === 'object'") as Boolean
-
-private object Globals {
+private object WxGlobals {
     var canvas: dynamic = null
     var tmp2dCanvas: dynamic = null
 }
 
-private fun weChatMain() {
+internal fun weChatMain() {
     //region document
     @Suppress("UNUSED_VARIABLE")
     val documentObj = jsObj {
         getElementById = fun(id: String) = when (id) {
-            CANVAS_NAME -> Globals.canvas
+            CANVAS_NAME -> WxGlobals.canvas
             else -> null
         }
 
@@ -61,7 +62,7 @@ private fun weChatMain() {
         }
 
         requestAnimationFrame = fun(handler: dynamic) {
-            Globals.canvas.requestAnimationFrame(handler)
+            WxGlobals.canvas.requestAnimationFrame(handler)
         }
     }
     jsDefineProperty(windowObj, "devicePixelRatio") { js("wx").getWindowInfo().pixelRatio }
@@ -87,17 +88,17 @@ private fun weChatMain() {
 
     js("Page")(jsObj {
         onLoad = {
-            queryElementById("tmp2dCanvas") {
+            queryWxElementById("tmp2dCanvas") {
                 it.style = jsObj { } // dummy
-                Globals.tmp2dCanvas = it
+                WxGlobals.tmp2dCanvas = it
 
                 // inject CanvasRenderingContext2D class
                 globalThis.CanvasRenderingContext2D =
                     it.getContext("2d").__proto__.constructor
             }
 
-            queryElementById(CANVAS_NAME) { canvas ->
-                Globals.canvas = canvas
+            queryWxElementById(CANVAS_NAME) { canvas ->
+                WxGlobals.canvas = canvas
 
                 canvas.style = jsObj { } // dummy
                 canvas.addEventListener = fun(name: String, handler: (dynamic) -> dynamic) {
@@ -124,59 +125,8 @@ private fun weChatMain() {
     })
 }
 
-fun jsObj(block: dynamic.() -> Unit): dynamic {
-    val obj = js("{}")
-    block(obj)
-    return obj
-}
-
-fun <T> jsDefineProperty(obj: dynamic, prop: String, getter: () -> T, setter: ((T) -> dynamic)? = null) {
-    js("Object").defineProperty(obj, prop, jsObj {
-        get = getter
-        setter?.also { set = it }
-    })
-}
-
-fun <T> jsDefineProperty(obj: dynamic, prop: String, getter: () -> T) =
-    jsDefineProperty(obj, prop, getter, null)
-
-private external val globalThis: dynamic
-
-private fun queryElementById(id: String, handler: (dynamic) -> Unit) {
+private fun queryWxElementById(id: String, handler: (dynamic) -> Unit) {
     js("wx").createSelectorQuery().select("#$id").node { res ->
         handler(res.node)
     }.exec()
 }
-
-//@Suppress("UnsafeCastFromDynamic")
-//private fun fetchImpl(url: String): Promise<Response> {
-//    if (url.startsWith(ASSETS_ROOT)) {
-//        return Promise { resolve, reject ->
-//            js("wx").getFileSystemManager().readFile(jsObj {
-//                filePath = url
-//            })
-//        }
-//    } else {
-//        throw NotImplementedError(url)
-//    }
-//    Promise { resolve, reject ->
-//        js("wx").request(jsObj {
-//            this.url = url
-//            method = "GET"
-//            success = { res: dynamic ->
-//                resolve(jsObj {
-//                    ok = true
-//                    status = res.
-//                })
-//            }
-//            fail = { err: dynamic ->
-//                reject(js("Error")(jsObj {
-//                    ok = false
-//                    status = err.errno
-//                    statusText = err.errMsg
-//                }))
-//            }
-//        })
-//        Unit
-//    }
-//}

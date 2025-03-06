@@ -1,4 +1,4 @@
-package template
+package entry
 
 import de.fabmax.kool.KoolContext
 import de.fabmax.kool.math.Vec3f
