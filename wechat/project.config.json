@@ -6,7 +6,7 @@
         "es6": false,
         "enhance": false,
         "postcss": false,
-        "minified": true,
+        "minified": false,
         "minifyWXML": true,
         "minifyWXSS": true,
         "autoAudits": false,
