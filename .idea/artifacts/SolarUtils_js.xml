@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="SolarUtils-js">
+    <output-path>$PROJECT_DIR$/build/libs</output-path>
+    <root id="archive" name="SolarUtils-js.jar">
+      <element id="module-output" name="SolarUtils.jsMain" />
+    </root>
+  </artifact>
+</component>

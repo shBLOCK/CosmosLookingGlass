@@ -1,0 +1,41 @@
+{
+    "miniprogramRoot": "miniprogram/",
+    "setting": {
+        "urlCheck": true,
+        "skylineRenderEnable": true,
+        "es6": false,
+        "enhance": false,
+        "postcss": false,
+        "minified": true,
+        "minifyWXML": true,
+        "minifyWXSS": true,
+        "autoAudits": false,
+        "compileHotReLoad": true,
+        "useIsolateContext": true,
+        "bigPackageSizeSupport": true,
+        "babelSetting": {
+            "ignore": [],
+            "disablePlugins": [],
+            "outputPath": ""
+        }
+    },
+    "appid": "wx70e1c26b9845f0f6",
+    "projectname": "SolarUtils",
+    "libVersion": "3.7.7",
+    "compileType": "miniprogram",
+    "srcMiniprogramRoot": "miniprogram/",
+    "packOptions": {
+        "ignore": [
+            {
+                "value": "index/src/README.md",
+                "type": "file"
+            }
+        ],
+        "include": []
+    },
+    "editorSetting": {
+        "tabIndent": "insertSpaces",
+        "tabSize": 4
+    },
+    "condition": {}
+}

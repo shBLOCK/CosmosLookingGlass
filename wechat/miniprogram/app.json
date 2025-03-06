@@ -1,0 +1,11 @@
+{
+  "pages": [
+    "index/index"
+  ],
+  "sitemapLocation": "sitemap.json",
+  "window": {
+      "navigationStyle": "custom"
+  },
+  "resizable": true,
+  "debug": false
+}
