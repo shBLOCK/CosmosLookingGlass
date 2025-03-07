@@ -140,8 +140,7 @@ internal fun weChatMain() {
         globalThis.performance = js("wx").getPerformance()
     //endregion
 
-//    js("require('extra_wechat_compat_hacks.js')")
-
+    //region touch event
     @Suppress("unused")
     class WxTouch(
         @JsName("identifier") val identifier: Int,
@@ -185,15 +184,14 @@ internal fun weChatMain() {
         constructor(event: dynamic) : this(
             WxTouchList(event.changedTouches),
             WxTouchList(event.touches)
-        ) {
-            console.log(event)
-        }
+        )
 
         @JsName("preventDefault")
         fun preventDefault() {}
     }
     @Suppress("UnsafeCastFromDynamic")
     globalThis.TouchEvent = WxTouchEvent(null.asDynamic(), null.asDynamic()).jsClass
+    //endregion
 
     js("Page")(jsObj page@{
         onLoad = {

@@ -20,12 +20,12 @@ class WxAssetLoader(val basePath: String) : AssetLoader() {
     }
 
     override suspend fun loadImage2d(ref: AssetRef.Image2d): LoadedAsset.Image2d {
-        val resolveSz = ref.props?.resolveSize
+        val resolveSz = ref.resolveSize
         val result = loadImageData(ref.path, ref.isHttp, resolveSz).map {
             ImageTextureData(
-                it.unsafeCast<ImageBitmap>(),
+                it.unsafeCast<ImageBitmap>(), // ImageData is mostly compatible with ImageBitmap
                 trimAssetPath(ref.path),
-                ref.props?.format ?: TexFormat.RGBA
+                ref.format
             )
         }
         return LoadedAsset.Image2d(ref, result)

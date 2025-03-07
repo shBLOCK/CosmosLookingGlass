@@ -1,0 +1,5 @@
+[submodule "kool"]
+	path = kool
+	url = https://github.com/kool-engine/kool.git
+	branch = main
+	ignore = all

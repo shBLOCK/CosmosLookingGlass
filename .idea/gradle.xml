@@ -4,10 +4,38 @@
   <component name="GradleSettings">
     <option name="linkedExternalProjectsSettings">
       <GradleProjectSettings>
+        <compositeConfiguration>
+          <compositeBuild compositeDefinitionSource="SCRIPT">
+            <builds>
+              <build path="$PROJECT_DIR$/kool" name="kool">
+                <projects>
+                  <project path="$PROJECT_DIR$/kool" />
+                  <project path="$PROJECT_DIR$/kool/kool-core" />
+                  <project path="$PROJECT_DIR$/kool/kool-demo" />
+                  <project path="$PROJECT_DIR$/kool/kool-editor" />
+                  <project path="$PROJECT_DIR$/kool/kool-editor-model" />
+                  <project path="$PROJECT_DIR$/kool/kool-physics" />
+                </projects>
+              </build>
+              <build path="$PROJECT_DIR$/kool/buildSrc" name="buildSrc">
+                <projects>
+                  <project path="$PROJECT_DIR$/kool/buildSrc" />
+                </projects>
+              </build>
+            </builds>
+          </compositeBuild>
+        </compositeConfiguration>
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/kool" />
+            <option value="$PROJECT_DIR$/kool/buildSrc" />
+            <option value="$PROJECT_DIR$/kool/kool-core" />
+            <option value="$PROJECT_DIR$/kool/kool-demo" />
+            <option value="$PROJECT_DIR$/kool/kool-editor" />
+            <option value="$PROJECT_DIR$/kool/kool-editor-model" />
+            <option value="$PROJECT_DIR$/kool/kool-physics" />
           </set>
         </option>
       </GradleProjectSettings>

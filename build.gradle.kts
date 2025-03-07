@@ -1,9 +1,8 @@
-import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalDistributionDsl
 import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
 
 plugins {
-    kotlin("multiplatform") version "2.1.0"
+    kotlin("multiplatform") version "2.1.10"
 }
 
 repositories {
@@ -36,8 +35,8 @@ kotlin {
     
     sourceSets {
         val koolVersion = "0.16.0"
-        val lwjglVersion = "3.3.5"
-        val physxJniVersion = "2.4.0"
+        val lwjglVersion = "3.3.6"
+        val physxJniVersion = "2.5.1"
 
         // JVM target platforms, you can remove entries from the list in case you want to target
         // only a specific platform
@@ -47,10 +46,11 @@ kotlin {
             dependencies {
                 // add additional kotlin multi-platform dependencies here...
 
-                implementation("de.fabmax.kool:kool-core:$koolVersion")
-                implementation("de.fabmax.kool:kool-physics:$koolVersion")
+                implementation("kool:kool-core")
+//                implementation("de.fabmax.kool:kool-core:$koolVersion")
+//                implementation("de.fabmax.kool:kool-physics:$koolVersion")
 
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
             }
         }
 
