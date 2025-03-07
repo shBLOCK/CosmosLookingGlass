@@ -4,10 +4,13 @@ import de.fabmax.kool.KoolContext
 import de.fabmax.kool.math.Vec3f
 import de.fabmax.kool.math.deg
 import de.fabmax.kool.modules.ksl.KslPbrShader
+import de.fabmax.kool.modules.ui2.*
+import de.fabmax.kool.scene.Scene
 import de.fabmax.kool.scene.addColorMesh
 import de.fabmax.kool.scene.defaultOrbitCamera
 import de.fabmax.kool.scene.scene
 import de.fabmax.kool.util.Color
+import de.fabmax.kool.util.MdColor
 import de.fabmax.kool.util.Time
 import de.fabmax.kool.util.debugOverlay
 
@@ -45,6 +48,31 @@ fun launchApp(ctx: KoolContext) {
         lighting.singleDirectionalLight {
             setup(Vec3f(-1f, -1f, -1f))
             setColor(Color.WHITE, 5f)
+        }
+    }
+
+    ctx.scenes += scene {
+        setupUiScene(Scene.DEFAULT_CLEAR_COLOR)
+
+        addPanelSurface(colors = Colors.singleColorLight(MdColor.LIGHT_GREEN)) {
+            modifier
+                .size(400.dp, 300.dp)
+                .align(AlignmentX.Center, AlignmentY.Center)
+                .background(RoundRectBackground(colors.background, 16.dp))
+
+            var clickCount by remember(0)
+            Button("Click me!") {
+                modifier
+                    .alignX(AlignmentX.Center)
+                    .margin(sizes.largeGap * 4f)
+                    .padding(horizontal = sizes.largeGap, vertical = sizes.gap)
+                    .font(sizes.largeText)
+                    .onClick { clickCount++ }
+            }
+            Text("Button clicked $clickCount times") {
+                modifier
+                    .alignX(AlignmentX.Center)
+            }
         }
     }
 

@@ -16,4 +16,6 @@ fun <T> jsDefineProperty(obj: dynamic, prop: String, getter: () -> T, setter: ((
 fun <T> jsDefineProperty(obj: dynamic, prop: String, getter: () -> T) =
     jsDefineProperty(obj, prop, getter, null)
 
+val Any?.jsClass get() = asDynamic().__proto__.constructor
+
 external val globalThis: dynamic
