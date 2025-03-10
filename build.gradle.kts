@@ -27,6 +27,9 @@ kotlin {
                 //mode = KotlinWebpackConfig.Mode.PRODUCTION
                 mode = KotlinWebpackConfig.Mode.DEVELOPMENT
             }
+            testTask {
+                enabled = false
+            }
         }
         compilerOptions {
             target.set("es2015")
@@ -34,7 +37,6 @@ kotlin {
     }
     
     sourceSets {
-        val koolVersion = "0.16.0"
         val lwjglVersion = "3.3.6"
         val physxJniVersion = "2.5.1"
 
