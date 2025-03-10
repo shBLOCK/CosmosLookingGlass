@@ -7,7 +7,8 @@ import wechat.WxAssetLoader
 import utils.jsObj
 import utils.jsDefineProperty
 import utils.globalThis
-import utils.jsClass
+import utils.jsConstructor
+import utils.newJsProxy
 
 private const val CANVAS_NAME = "glCanvas"
 private const val ASSETS_ROOT = "./src/assets"
@@ -41,9 +42,8 @@ internal fun weChatMain() {
             else -> null
         }
 
-        addEventListener = fun(name: String, handler: (dynamic) -> dynamic) {
-            //TODO
-        }
+        @Suppress("unused")
+        addEventListener = fun(name: String, handler: (dynamic) -> dynamic) {}
 
         createElement = fun(localName: String): dynamic {
             if (localName == "canvas") {
@@ -58,17 +58,18 @@ internal fun weChatMain() {
     // region keyboard
     @Suppress("unused")
     class WxKeyboardEvent(event: dynamic) {
+        //@formatter:off
         @JsName("key") val key = event.key.unsafeCast<String>()
         @JsName("code") val code = event.code.unsafeCast<String>()
         @JsName("altKey") val altKey = event.altKey.unsafeCast<Boolean>()
         @JsName("shiftKey") val shiftKey = event.shiftKey.unsafeCast<Boolean>()
         @JsName("timeStamp") val timeStamp = event.timeStamp.unsafeCast<Double>()
-
         @JsName("location") val location = 0x00 // DOM_KEY_LOCATION_STANDARD
         @JsName("ctrlKey") val ctrlKey = false
         @JsName("metaKey") val metaKey = false
         @JsName("repeat") val repeat = false
         @JsName("isComposing") val isComposing = false
+        //@formatter:on
 
         @JsName("getModifierState")
         fun getModifierState(keyArg: String) = when (keyArg) {
@@ -77,7 +78,7 @@ internal fun weChatMain() {
             else -> false
         }
     }
-    globalThis.KeyboardEvent = WxKeyboardEvent(jsObj { }).jsClass
+    globalThis.KeyboardEvent = WxKeyboardEvent(jsObj { }).jsConstructor
     jsDefineProperty(
         documentObj,
         "onkeydown",
@@ -97,9 +98,8 @@ internal fun weChatMain() {
 
     //region window
     val windowObj = jsObj {
-        addEventListener = fun(name: String, handler: (dynamic) -> dynamic) {
-            //TODO
-        }
+        @Suppress("unused")
+        addEventListener = fun(name: String, handler: (dynamic) -> dynamic) {}
 
         requestAnimationFrame = fun(handler: dynamic) {
             WxGlobals.canvas.requestAnimationFrame(handler)
@@ -107,7 +107,7 @@ internal fun weChatMain() {
 
         devicePixelRatio = js("wx").getWindowInfo().pixelRatio
     }
-//    jsDefineProperty(windowObj, "devicePixelRatio") { js("wx").getWindowInfo().pixelRatio }
+
     console.log("window.devicePixelRatio: ${windowObj.devicePixelRatio}")
     jsDefineProperty(windowObj, "innerWidth") { js("wx").getWindowInfo().windowWidth }
     jsDefineProperty(windowObj, "innerHeight") { js("wx").getWindowInfo().windowHeight }
@@ -128,7 +128,7 @@ internal fun weChatMain() {
     //endregion
 
     //region navigator
-    @Suppress("UNUSED_VARIABLE")
+    @Suppress("UNUSED_VARIABLE", "unused")
     val navigatorObj = jsObj {
         getGamepads = { null }
     }
@@ -161,19 +161,25 @@ internal fun weChatMain() {
             pCanvasY = touch.y.unsafeCast<Double>()
         )
 
-        @JsName("clientX") val clientX = pClientX
-        @JsName("clientY") val clientY = pClientY
+        @JsName("clientX")
+        val clientX = pClientX
+
+        @JsName("clientY")
+        val clientY = pClientY
     }
-    globalThis.Touch = WxTouch(0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0).jsClass
+    globalThis.Touch = WxTouch(0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0).jsConstructor
 
     @Suppress("unused")
     class WxTouchList(private val _array: Array<WxTouch>) {
         constructor(touchList: dynamic) : this(touchList.map { touch -> WxTouch(touch) }.unsafeCast<Array<WxTouch>>())
 
-        @JsName("length") val length = _array.size
-        @JsName("item") fun item(index: Int): WxTouch = _array[index]
+        @JsName("length")
+        val length = _array.size
+
+        @JsName("item")
+        fun item(index: Int): WxTouch = _array[index]
     }
-    globalThis.TouchList = WxTouchList(arrayOf()).jsClass
+    globalThis.TouchList = WxTouchList(arrayOf()).jsConstructor
 
     @Suppress("unused")
     class WxTouchEvent(
@@ -187,10 +193,11 @@ internal fun weChatMain() {
         )
 
         @JsName("preventDefault")
-        fun preventDefault() {}
+        fun preventDefault() {
+        }
     }
     @Suppress("UnsafeCastFromDynamic")
-    globalThis.TouchEvent = WxTouchEvent(null.asDynamic(), null.asDynamic()).jsClass
+    globalThis.TouchEvent = WxTouchEvent(null.asDynamic(), null.asDynamic()).jsConstructor
     //endregion
 
     js("Page")(jsObj page@{
@@ -201,7 +208,7 @@ internal fun weChatMain() {
 
                 // inject CanvasRenderingContext2D class
                 globalThis.CanvasRenderingContext2D =
-                    it.getContext("2d").__proto__.constructor
+                    it.getContext("2d").constructor
             }
 
             queryWxElementById(CANVAS_NAME) { canvas ->
@@ -209,7 +216,6 @@ internal fun weChatMain() {
 
                 canvas.style = jsObj { } // dummy
                 canvas.addEventListener = fun(name: String, handler: (dynamic) -> dynamic) {
-                    console.log("canvas.$name: $handler")
                     when (name) {
                         "touchstart" -> this@page._handleTouchStart = { e: dynamic -> handler(WxTouchEvent(e)) }
                         "touchmove" -> this@page._handleTouchMove = { e: dynamic -> handler(WxTouchEvent(e)) }
@@ -222,14 +228,55 @@ internal fun weChatMain() {
                 console.log("WebGL2 supported extensions: ${tmpCtx.getSupportedExtensions()}")
 
                 // inject WebGL2RenderingContext class
-                globalThis.WebGL2RenderingContext =
-                    tmpCtx.__proto__.constructor
+                globalThis.WebGL2RenderingContext = newJsProxy(tmpCtx.constructor) {
+                    get = fun(obj: dynamic, prop: dynamic): dynamic {
+                        if (js("prop in obj")) return obj[prop]
+                        // obj.constructor doesn't include class attributes on Android
+                        return tmpCtx.__proto__[prop]
+                    }
+                }
                 // inject WebGLRenderingContext class
                 globalThis.WebGLRenderingContext = globalThis.WebGL2RenderingContext
 
                 // inject HTMLCanvasElement class
                 globalThis.HTMLCanvasElement =
-                    canvas.__proto__.constructor
+                    canvas.constructor
+
+                canvas.getContext = newJsProxy(canvas.getContext) {
+                    apply = { target: dynamic, thisArg: dynamic, argumentsList: dynamic ->
+                        val context = target.apply(thisArg, argumentsList)
+
+//                        KEEP: log all GL calls, useful for debugging!
+//                        js("Object").getOwnPropertyNames(context.__proto__).unsafeCast<Array<String>>()
+//                            .forEach { name ->
+//                                val org = context[name]
+//                                if (jsTypeOf(org) == "function") {
+//                                    console.log("wrapping gl context.${org.name}")
+//                                    context[name] = newJsProxy(context[name]) {
+//                                        apply = { target: dynamic, thisArg: dynamic, argumentsList: dynamic ->
+//                                            val result = target.apply(thisArg, argumentsList)
+//                                            console.log("gl: context.${org.name}", argumentsList, "->", result)
+//                                            result
+//                                        }
+//                                    }
+//                                }
+//                            }
+
+                        // workaround for https://developers.weixin.qq.com/community/develop/doc/0008a27eb80d58e1d7f252b6f6ac00
+                        context.getProgramParameter = newJsProxy(context.getProgramParameter) {
+                            apply = { target: dynamic, thisArg: dynamic, argumentsList: dynamic ->
+                                val result = target.apply(thisArg, argumentsList)
+                                val stat = argumentsList[1]
+                                when (stat) {
+                                    context.LINK_STATUS -> js("Boolean")(result)
+                                    else -> result
+                                }
+                            }
+                        }
+
+                        context
+                    }
+                }
 
                 // FINALLY launch the application...
                 launch()
@@ -249,7 +296,8 @@ internal fun weChatMain() {
 }
 
 private fun queryWxElementById(id: String, handler: (dynamic) -> Unit) {
-    js("wx").createSelectorQuery().select("#$id").node { res ->
-        handler(res.node)
-    }.exec()
+    js("wx").createSelectorQuery()
+        .select("#$id")
+        .node { res -> handler(res.node) }
+        .exec()
 }

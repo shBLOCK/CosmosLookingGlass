@@ -16,6 +16,12 @@ fun <T> jsDefineProperty(obj: dynamic, prop: String, getter: () -> T, setter: ((
 fun <T> jsDefineProperty(obj: dynamic, prop: String, getter: () -> T) =
     jsDefineProperty(obj, prop, getter, null)
 
-val Any?.jsClass get() = asDynamic().__proto__.constructor
+@Suppress("UnusedVariable")
+fun newJsProxy(obj: dynamic, optionsConfigurator: dynamic.() -> Unit): dynamic {
+    val options = jsObj(optionsConfigurator)
+    return js("new Proxy(obj, options)")
+}
+
+val Any?.jsConstructor get() = asDynamic().constructor
 
 external val globalThis: dynamic
