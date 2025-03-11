@@ -200,6 +200,8 @@ internal fun weChatMain() {
     globalThis.TouchEvent = WxTouchEvent(null.asDynamic(), null.asDynamic()).jsConstructor
     //endregion
 
+    globalThis.AudioContext = js("wx").createWebAudioContext().jsConstructor // TODO: untested
+
     js("Page")(jsObj page@{
         onLoad = {
             queryWxElementById("tmp2dCanvas") {
