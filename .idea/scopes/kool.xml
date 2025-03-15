@@ -1,0 +1,3 @@
+<component name="DependencyValidationManager">
+  <scope name="kool" pattern="file[kool*]:*//*||file[kool]:*/" />
+</component>
