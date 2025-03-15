@@ -1,14 +1,9 @@
-package entry
+package platform
 
 import de.fabmax.kool.KoolApplication
 import de.fabmax.kool.KoolConfigJs
 import de.fabmax.kool.pipeline.backend.webgpu.GPUPowerPreference
-import wechat.WxAssetLoader
-import utils.jsObj
-import utils.jsDefineProperty
-import utils.globalThis
-import utils.jsConstructor
-import utils.newJsProxy
+import platform.wechat.WxAssetLoader
 
 private const val CANVAS_NAME = "glCanvas"
 private const val ASSETS_ROOT = "./src/assets"

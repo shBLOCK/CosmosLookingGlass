@@ -89,7 +89,7 @@ task("runnableJar", Jar::class) {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     archiveAppendix.set("runnable")
     manifest {
-        attributes["Main-Class"] = "LauncherKt"
+        attributes["Main-Class"] = "platform.LauncherKt"
     }
 
     configurations
@@ -121,7 +121,7 @@ task("runApp", JavaExec::class) {
         .map { it.copyRecursive().filter { true } }
         .forEach { classpath += it }
 
-    mainClass.set("LauncherKt")
+    mainClass.set("platform.LauncherKt")
 }
 
 val build by tasks.getting(Task::class) {

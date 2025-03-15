@@ -1,4 +1,4 @@
-package wechat
+package platform.wechat
 
 external object wx {
 

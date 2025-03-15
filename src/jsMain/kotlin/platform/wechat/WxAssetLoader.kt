@@ -1,10 +1,9 @@
-package wechat
+package platform.wechat
 
 import de.fabmax.kool.*
 import de.fabmax.kool.math.Vec2i
-import de.fabmax.kool.pipeline.TexFormat
 import de.fabmax.kool.platform.ImageTextureData
-import utils.jsObj
+import platform.jsObj
 import kotlinx.coroutines.CompletableDeferred
 import org.w3c.dom.HTMLImageElement
 import org.w3c.dom.ImageBitmap

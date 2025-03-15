@@ -1,4 +1,4 @@
-package utils
+package platform
 
 fun jsObj(block: dynamic.() -> Unit): dynamic {
     val obj = js("({})")

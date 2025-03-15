@@ -1,4 +1,4 @@
-package entry
+package platform
 
 import de.fabmax.kool.KoolApplication
 import de.fabmax.kool.KoolConfigJvm
