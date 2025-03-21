@@ -13,6 +13,8 @@ import kotlin.math.acos
 import kotlin.math.cos
 import kotlin.math.sin
 
+const val SPEED_OF_LIGHT = 299792458.0
+
 inline val Double.au get() = this * 149_597_870_700.0
 
 inline val Double.deg get() = this * (PI / 180.0)
@@ -27,7 +29,8 @@ fun MutableVec3d.expDecaySnapping(target: Vec3d, decay: Double, deltaT: Float = 
     return this
 }
 
-fun slerp(quatA: QuatD, quatB: QuatD, f: Double, result: MutableQuatD): MutableQuatD {
+fun slerpShortest(quatA: QuatD, quatB: QuatD, f: Double, result: MutableQuatD = MutableQuatD()): MutableQuatD {
+    // copied from kool TODO: verify if this actually does slerp shortest
     val qa = MutableQuatD()
     val qb = MutableQuatD()
     val qc = MutableQuatD()
