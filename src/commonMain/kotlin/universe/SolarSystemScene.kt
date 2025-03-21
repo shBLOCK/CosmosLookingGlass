@@ -5,7 +5,7 @@ import utils.AstroTime
 import de.fabmax.kool.scene.Scene
 import de.fabmax.kool.util.Time
 import dynamics.SolarSystemDynModel
-import dynamics.SolarSystemKeplerModel
+import dynamics.SolarSystemKeplerModel3000BC3000AD
 
 class SolarSystemScene : Scene() {
     init {
@@ -14,7 +14,7 @@ class SolarSystemScene : Scene() {
 
     var time = AstroTime(0.0)
 
-    var dynModel: SolarSystemDynModel = SolarSystemKeplerModel() //TODO: selectable model
+    var dynModel: SolarSystemDynModel = SolarSystemKeplerModel3000BC3000AD() //TODO: selectable model
 
     val sun = Sun().also { it.dynModelProvider = dynModel::sun }.also(this::addNode)
     val mercury = Mercury().also { it.dynModelProvider = dynModel::mercury }.also(this::addNode)

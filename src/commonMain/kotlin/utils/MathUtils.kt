@@ -8,7 +8,6 @@ import de.fabmax.kool.math.clamp
 import de.fabmax.kool.math.expDecay
 import de.fabmax.kool.math.isFuzzyEqual
 import de.fabmax.kool.util.Time
-import kotlin.math.PI
 import kotlin.math.acos
 import kotlin.math.cos
 import kotlin.math.sin
@@ -16,8 +15,6 @@ import kotlin.math.sin
 const val SPEED_OF_LIGHT = 299792458.0
 
 inline val Double.au get() = this * 149_597_870_700.0
-
-inline val Double.deg get() = this * (PI / 180.0)
 
 fun Double.expDecaySnapping(target: Double, decay: Double, deltaT: Float = Time.deltaT) =
     if (!isFuzzyEqual(this, target)) expDecay(target, decay, deltaT) else target

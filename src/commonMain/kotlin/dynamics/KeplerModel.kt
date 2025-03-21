@@ -1,95 +1,107 @@
 package dynamics
 
 import de.fabmax.kool.math.MutableVec2d
-import de.fabmax.kool.math.Vec3d
+import de.fabmax.kool.math.MutableVec3d
 import de.fabmax.kool.math.deg
+import de.fabmax.kool.math.wrap
+import utils.AstroTime
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
-import kotlin.reflect.KProperty
 
 /**
  * An approximating dynamics model using Keplerian formulae. See [this NASA JPL Document](https://ssd.jpl.nasa.gov/planets/approx_pos.html).
+ *
+ * a: semi-major axis
+ * e: eccentricity
+ * I: inclination
+ * L: mean longitude
+ * lp: longitude of perihelion
+ * lan: longitude of the ascending node
  *
  * Uses the [ICRF](https://en.wikipedia.org/wiki/International_Celestial_Reference_System_and_its_realizations) reference frame.
  */
 @Suppress("LocalVariableName", "PrivatePropertyName")
 class KeplerModel(
-    a: Double,
-    e: Double,
-    I: Double,
-    L: Double,
-    lp: Double,
-    lan: Double,
+    private val _a: Double,
+    private val _e: Double,
+    private val _I: Double,
+    private val _L: Double,
+    private val _lp: Double,
+    private val _lan: Double,
 
-    da: Double,
-    de: Double,
-    dI: Double,
-    dL: Double,
-    dlp: Double,
-    dlan: Double,
+    private val _da: Double,
+    private val _de: Double,
+    private val _dI: Double,
+    private val _dL: Double,
+    private val _dlp: Double,
+    private val _dlan: Double,
 
     // fine-tune values
     private val ftB: Double = 0.0,
     private val ftC: Double = 0.0,
     private val ftS: Double = 0.0,
-    private val ftF: Double = 0.0
+    private val ftF: Double = 0.0,
+
+    private val timeMin: Long = Long.MIN_VALUE,
+    private val timeMax: Long = Long.MAX_VALUE
 ) : DynModelBase(), DynModel.Position {
-
-    inner class DriftingParam(
-        val origin: Double,
-        val drift: Double
-    ) {
-        operator fun getValue(thisRef: Any?, property: KProperty<*>) =
-            origin + drift * time.centuries
+    private var dirty = true
+    override fun seek(time: AstroTime) {
+        super.seek(time)
+        dirty = true
     }
 
-    /** semi-major axis */
-    private val a by DriftingParam(a, da)
+    private val lastResult = MutableVec3d()
 
-    /** eccentricity */
-    private val e by DriftingParam(e, de)
+    private val tmpVec2d = MutableVec2d()
 
-    /** inclination */
-    private val I by DriftingParam(I, dI)
+    override fun position(result: MutableVec3d): MutableVec3d {
+        if (!dirty) return result.set(lastResult)
 
-    /** mean longitude */
-    private val L by DriftingParam(L, dL)
+        val timeClamped = AstroTime(time.seconds.coerceIn(timeMin, timeMax), time.fraction)
 
-    /** longitude of perihelion */
-    private val lp by DriftingParam(lp, dlp)
+        val centuriesClamped = timeClamped.centuries
+        val ca = _a + _da * centuriesClamped
+        val ce = _e + _de * centuriesClamped
+        val cI = _I + _dI * centuriesClamped
+        val cL = _L + _dL * centuriesClamped
+        val clp = _lp + _dlp * centuriesClamped
+        val clan = _lan + _dlan * centuriesClamped
 
-    /** longitude of the ascending node */
-    private val lan by DriftingParam(lan, dlan)
+        val ap = clp - clan
+        val M_full = cL - clp + ftB * centuriesClamped * centuriesClamped +
+            ftC * cos(ftF * centuriesClamped) + ftS * sin(ftF * centuriesClamped)
+        val M = M_full.wrap(-PI, PI)
 
+        val E = solveKeplerEq(ce, M)
 
-    override fun position(): Vec3d {
-        val T = time.centuries
-        val ap = lp - lan
-        val M_full = L - lp + ftB * T * T + ftC * cos(ftF * T) + ftS * sin(ftF * T)
-        val M = (M_full + PI).mod(PI * 2.0) - PI // to -pi..pi
+        val hx = ca * (cos(E) - ce)
+        val hy = ca * sqrt(1.0 - ce * ce) * sin(E)
 
-        val E = solveKeplerEq(e, M)
+        val sin_ap = sin(ap)
+        val cos_ap = cos(ap)
+        val sin_I = sin(cI)
+        val cos_I = cos(cI)
+        val sin_lan = sin(clan)
+        val cos_lan = cos(clan)
 
-        val hx = a * (cos(E) - e)
-        val hy = a * sqrt(1.0 - e * e) * sin(E)
+        val xEcl = (cos_ap * cos_lan - sin_ap * sin_lan * cos_I) * hx +
+            (-sin_ap * cos_lan - cos_ap * sin_lan * cos_I) * hy
+        val yEcl = (cos_ap * sin_lan + sin_ap * cos_lan * cos_I) * hx +
+            (-sin_ap * sin_lan + cos_ap * cos_lan * cos_I) * hy
+        val zEcl = (sin_ap * sin_I) * hx +
+            (cos_ap * sin_I) * hy
 
-        val xEcl = (cos(ap) * cos(lan) - sin(ap) * sin(lan) * cos(I)) * hx +
-            (-sin(ap) * cos(lan) - cos(ap) * sin(lan) * cos(I)) * hy
-        val yEcl = (cos(ap) * sin(lan) + sin(ap) * cos(lan) * cos(I)) * hx +
-            (-sin(ap) * sin(lan) + cos(ap) * cos(lan) * cos(I)) * hy
-        val zEcl = (sin(ap) * sin(I)) * hx +
-            (cos(ap) * sin(I)) * hy
-
-        return Vec3d(xEcl, MutableVec2d(yEcl, zEcl).rotate(23.43928.deg))
+        tmpVec2d.set(yEcl, zEcl).rotate(23.43928.deg)
+        return result.set(xEcl, tmpVec2d.x, tmpVec2d.y).also { lastResult.set(it) }
     }
-
 
     companion object {
         private const val KEPLER_MAX_ITER = 100
-        private const val KEPLER_TOLERANCE = 1e-9
+        private const val KEPLER_TOLERANCE = 1e-6
 
         /**
          * Solve *M = E - e * sin(E)* for E
@@ -108,4 +120,6 @@ class KeplerModel(
             throw RuntimeException("Kepler equation failed to converge (M = $m, final E after $KEPLER_MAX_ITER iterations = $e)")
         }
     }
+
+    override fun copy() = this
 }

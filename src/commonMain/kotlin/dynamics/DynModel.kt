@@ -1,5 +1,9 @@
+@file:Suppress("NOTHING_TO_INLINE")
+
 package dynamics
 
+import de.fabmax.kool.math.MutableQuatD
+import de.fabmax.kool.math.MutableVec3d
 import utils.AstroTime
 import de.fabmax.kool.math.QuatD
 import de.fabmax.kool.math.Vec3d
@@ -9,23 +13,29 @@ interface DynModel {
 
     fun seek(time: AstroTime)
 
+    fun copy(): DynModel
+
     interface IPosition {
-        fun position(): Vec3d
+        fun position(result: MutableVec3d = MutableVec3d()): MutableVec3d
     }
 
     interface Position : DynModel, IPosition {
         class Static(private val value: Vec3d) : DynModelBase(), Position {
-            override fun position() = value
+            override fun position(result: MutableVec3d) = result.set(value)
+
+            override fun copy() = this
         }
     }
 
     interface IOrientation {
-        fun orientation(): QuatD
+        fun orientation(result: MutableQuatD = MutableQuatD()): MutableQuatD
     }
 
     interface Orientation : DynModel, IOrientation {
         class Static(private val value: QuatD) : DynModelBase(), Orientation {
-            override fun orientation() = value
+            override fun orientation(result: MutableQuatD): MutableQuatD = result.set(value)
+
+            override fun copy() = this
         }
     }
 }
@@ -38,3 +48,5 @@ abstract class DynModelBase : DynModel {
         this.time = time
     }
 }
+
+inline fun <reified T: DynModel> T.copyTyped() = copy() as T
