@@ -27,8 +27,21 @@ class SolarSystemScene : Scene() {
     val uranus = Uranus().also { it.dynModelProvider = dynModel::uranus }.also(this::addNode)
     val neptune = Neptune().also { it.dynModelProvider = dynModel::neptune }.also(this::addNode)
 
+    val celestialBodies get() = iterator {
+        yield(sun)
+        yield(mercury)
+        yield(venus)
+        yield(earth)
+        yield(moon)
+        yield(mars)
+        yield(jupiter)
+        yield(saturn)
+        yield(uranus)
+        yield(neptune)
+    }
+
     override fun update(updateEvent: RenderPass.UpdateEvent) {
-        time += Time.deltaT.toDouble() * 60 * 60 * 24 * 6
+        time += Time.deltaT.toDouble() * 60 * 60 * 24 * 24
         dynModel.seek(time)
 
         super.update(updateEvent)

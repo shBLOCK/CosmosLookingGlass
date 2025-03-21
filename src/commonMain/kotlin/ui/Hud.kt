@@ -7,12 +7,25 @@ import de.fabmax.kool.modules.ui2.Button
 import de.fabmax.kool.modules.ui2.UiScene
 import de.fabmax.kool.modules.ui2.UiSurface
 import de.fabmax.kool.modules.ui2.layout
+import de.fabmax.kool.util.Time
+import dynamics.CelestialDynModel
+import dynamics.DynModel
+import dynamics.DynModelBase
 import universe.CelestialBody
 import universe.SolarSystemScene
+import kotlin.math.sin
 
 class Hud(
     val solarSystem: SolarSystemScene
 ) {
+    private val trailManager = TrailManager().apply {
+        solarSystem.celestialBodies.forEach { addTrace(it) }
+
+        reference = CelestialDynModel.Blending(solarSystem.sun.dynModel, solarSystem.earth.dynModel)
+
+        solarSystem += this.node
+    }
+
     var test = 0
 
     val hud: UiSurface = UiSurface(name = "HudSurface").also { hudSurface ->
@@ -42,5 +55,11 @@ class Hud(
 
     val scene = UiScene {
         this += hud
+
+        onUpdate {
+            trailManager.endTime = solarSystem.time
+            (trailManager.reference as CelestialDynModel.Blending).apply { t = sin(Time.gameTime)*.5+.5 }
+            trailManager.rebuild()
+        }
     }
 }
