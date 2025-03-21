@@ -13,7 +13,6 @@ open class SimpleSphericalCelestialBody(
         addColorMesh {
             generate {
                 color = this@SimpleSphericalCelestialBody.themeColor
-                println(color)
                 uvSphere {
 //                    radius = this@SimpleSphericalCelestialBody.radius.toFloat()
                     radius = 10000000e3f
