@@ -12,7 +12,6 @@ import de.fabmax.kool.scene.PerspectiveCamera
 import de.fabmax.kool.util.Time
 import de.fabmax.kool.util.Viewport
 import utils.expDecaySnapping
-import utils.slerp
 import kotlin.math.exp
 import kotlin.math.max
 import kotlin.math.tan
@@ -20,7 +19,7 @@ import kotlin.math.tan
 class MainCameraControl(val view: RenderPass.View) : Node(), InputStack.PointerListener {
     companion object {
         private val DEFAULT_HALF_FOV = 35.0.deg
-        private const val MIN_HALF_FOV_RAD = 0.02
+        private const val MIN_HALF_FOV_RAD = 0.03
 
         private const val SCROLL_ZOOM_SPEED = 0.1
         private const val DRAG_ROTATE_SPEED = 0.15
@@ -99,11 +98,11 @@ class MainCameraControl(val view: RenderPass.View) : Node(), InputStack.PointerL
         targetParams.nearClipDist = targetParams.halfSize / tan(max(targetParams.halfFov.rad, DEFAULT_HALF_FOV.rad)) - 1.0
 
         // Smooth motion
-        params.halfFov = params.halfFov.rad.expDecaySnapping(targetParams.halfFov.rad, 16.0).rad
+        params.halfFov = params.halfFov.rad.expDecaySnapping(targetParams.halfFov.rad, 12.0).rad
         params.halfSize = params.halfSize.expDecaySnapping(targetParams.halfSize, 24.0)
         params.nearClipDist = params.nearClipDist.expDecaySnapping(targetParams.nearClipDist, 24.0)
         params.center.expDecaySnapping(targetParams.center, 24.0)
-        params.orientation = slerp(params.orientation, targetParams.orientation, exp(-300.0 * Time.deltaT), result = params.orientation)
+        params.orientation = params.orientation.mix(targetParams.orientation, exp(-8.0 * Time.deltaT), result = params.orientation).norm()
         params.absFarClip = targetParams.absFarClip
 
         params.apply()
@@ -138,7 +137,7 @@ class MainCameraControl(val view: RenderPass.View) : Node(), InputStack.PointerL
         var nearClipDist = halfSize / DEFAULT_HALF_FOV.tan - 1.0
 
         /** Absolute far clip plane distance */
-        var absFarClip = 1e13
+        var absFarClip = 1e15
 
         var orientation = MutableQuatD()
             set(value) {
