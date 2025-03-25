@@ -1,7 +1,7 @@
 package universe
 
 import de.fabmax.kool.pipeline.RenderPass
-import utils.AstroTime
+import utils.IntFract
 import de.fabmax.kool.scene.Scene
 import de.fabmax.kool.util.Time
 import dynamics.SolarSystemDynModel
@@ -12,7 +12,7 @@ class SolarSystemScene : Scene() {
         mainRenderPass.isDoublePrecision = true
     }
 
-    var time = AstroTime(0.0)
+    var time = IntFract(0.0)
 
     var dynModel: SolarSystemDynModel = SolarSystemKeplerModel3000BC3000AD() //TODO: selectable model
 

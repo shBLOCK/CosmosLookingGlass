@@ -4,14 +4,14 @@ package dynamics
 
 import de.fabmax.kool.math.MutableQuatD
 import de.fabmax.kool.math.MutableVec3d
-import utils.AstroTime
+import utils.IntFract
 import de.fabmax.kool.math.QuatD
 import de.fabmax.kool.math.Vec3d
 
 interface DynModel {
-    val time: AstroTime
+    val time: IntFract
 
-    fun seek(time: AstroTime)
+    fun seek(time: IntFract)
 
     fun copy(): DynModel
 
@@ -41,10 +41,10 @@ interface DynModel {
 }
 
 abstract class DynModelBase : DynModel {
-    override var time: AstroTime = AstroTime(0.0)
+    override var time = IntFract(0.0)
         protected set
 
-    override fun seek(time: AstroTime) {
+    override fun seek(time: IntFract) {
         this.time = time
     }
 }

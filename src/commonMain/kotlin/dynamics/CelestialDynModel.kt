@@ -4,7 +4,7 @@ import de.fabmax.kool.math.MutableQuatD
 import de.fabmax.kool.math.MutableVec3d
 import de.fabmax.kool.math.QuatD
 import de.fabmax.kool.math.Vec3d
-import utils.AstroTime
+import utils.IntFract
 import utils.slerpShortest
 
 interface CelestialDynModel : DynModel.Position, DynModel.Orientation {
@@ -15,7 +15,7 @@ interface CelestialDynModel : DynModel.Position, DynModel.Orientation {
         CelestialDynModel,
         DynModel.IPosition by positionModel,
         DynModel.IOrientation by orientationModel {
-        override fun seek(time: AstroTime) {
+        override fun seek(time: IntFract) {
             positionModel.seek(time)
             orientationModel.seek(time)
             super.seek(time)
@@ -30,7 +30,7 @@ interface CelestialDynModel : DynModel.Position, DynModel.Orientation {
     }
 
     class Blending(val a: CelestialDynModel, val b: CelestialDynModel, var t: Double = 0.0) : DynModelBase(), CelestialDynModel {
-        override fun seek(time: AstroTime) {
+        override fun seek(time: IntFract) {
             a.seek(time)
             b.seek(time)
             super<DynModelBase>.seek(time)

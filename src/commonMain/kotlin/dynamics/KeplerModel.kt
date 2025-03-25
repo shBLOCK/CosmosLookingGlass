@@ -4,7 +4,8 @@ import de.fabmax.kool.math.MutableVec2d
 import de.fabmax.kool.math.MutableVec3d
 import de.fabmax.kool.math.deg
 import de.fabmax.kool.math.wrap
-import utils.AstroTime
+import utils.IntFract
+import utils.j2000Centuries
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
@@ -49,7 +50,7 @@ class KeplerModel(
     private val timeMax: Long = Long.MAX_VALUE
 ) : DynModelBase(), DynModel.Position {
     private var dirty = true
-    override fun seek(time: AstroTime) {
+    override fun seek(time: IntFract) {
         super.seek(time)
         dirty = true
     }
@@ -61,9 +62,9 @@ class KeplerModel(
     override fun position(result: MutableVec3d): MutableVec3d {
         if (!dirty) return result.set(lastResult)
 
-        val timeClamped = AstroTime(time.seconds.coerceIn(timeMin, timeMax), time.fraction)
+        val timeClamped = IntFract(time.int.coerceIn(timeMin, timeMax), time.fract)
 
-        val centuriesClamped = timeClamped.centuries
+        val centuriesClamped = timeClamped.j2000Centuries
         val ca = _a + _da * centuriesClamped
         val ce = _e + _de * centuriesClamped
         val cI = _I + _dI * centuriesClamped

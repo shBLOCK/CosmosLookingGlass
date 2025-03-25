@@ -4,7 +4,7 @@ package dynamics
 import de.fabmax.kool.math.Vec3d
 import de.fabmax.kool.math.deg
 import universe.SolarSystemConsts
-import utils.AstroTime
+import utils.AstroConsts
 import utils.au
 
 abstract class SolarSystemKeplerModelBase : SolarSystemOrientatedModel() {
@@ -27,8 +27,8 @@ abstract class SolarSystemKeplerModelBase : SolarSystemOrientatedModel() {
     ) }
 }
 
-private const val BC3000 = -50L * AstroTime.SECONDS_IN_CENTURY
-private const val AD3000 = 10L * AstroTime.SECONDS_IN_CENTURY
+private const val BC3000 = -50L * AstroConsts.J2000_SECONDS_IN_CENTURY
+private const val AD3000 = 10L * AstroConsts.J2000_SECONDS_IN_CENTURY
 
 class SolarSystemKeplerModel3000BC3000AD : SolarSystemKeplerModelBase() {
     //@formatter:off

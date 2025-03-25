@@ -1,6 +1,6 @@
 package dynamics
 
-import utils.AstroTime
+import utils.IntFract
 
 abstract class SolarSystemDynModel : DynModelBase() {
     abstract val sun: CelestialDynModel
@@ -14,7 +14,7 @@ abstract class SolarSystemDynModel : DynModelBase() {
     abstract val uranus: CelestialDynModel
     abstract val neptune: CelestialDynModel
 
-    override fun seek(time: AstroTime) {
+    override fun seek(time: IntFract) {
         if (this.time == time) return
         sun.seek(time)
         mercury.seek(time)
