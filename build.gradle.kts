@@ -2,7 +2,7 @@ import org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalDistributionDsl
 import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
 
 plugins {
-    kotlin("multiplatform") version "2.1.10"
+    kotlin("multiplatform") version "2.1.20"
 }
 
 repositories {
@@ -13,7 +13,7 @@ repositories {
 kotlin {
     // kotlin multiplatform (jvm + js) setup:
     jvm { }
-    jvmToolchain(11)
+    jvmToolchain(21)
 
     js {
         binaries.executable()
@@ -49,8 +49,6 @@ kotlin {
                 // add additional kotlin multi-platform dependencies here...
 
                 implementation("kool:kool-core")
-//                implementation("de.fabmax.kool:kool-core:$koolVersion")
-//                implementation("de.fabmax.kool:kool-physics:$koolVersion")
 
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
             }
