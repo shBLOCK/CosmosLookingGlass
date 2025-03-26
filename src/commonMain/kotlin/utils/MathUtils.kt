@@ -1,3 +1,5 @@
+@file:Suppress("NOTHING_TO_INLINE")
+
 package utils
 
 import de.fabmax.kool.math.MutableQuatD
@@ -57,3 +59,6 @@ fun slerpShortest(quatA: QuatD, quatB: QuatD, f: Double, result: MutableQuatD = 
     }
     return result
 }
+
+val Int.nextPowerOfTwo get() = if (this and (this - 1) == 0) this else 1 shl (32 - countLeadingZeroBits())
+val Int.prevPowerOfTwo get() = if (this and (this - 1) == 0) this else 1 shl (32 - countLeadingZeroBits() - 1)

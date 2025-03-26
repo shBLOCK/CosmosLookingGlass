@@ -51,6 +51,7 @@ kotlin {
                 implementation("kool:kool-core")
 
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
+                implementation("org.jetbrains.kotlinx:atomicfu:0.27.0")
             }
         }
 
