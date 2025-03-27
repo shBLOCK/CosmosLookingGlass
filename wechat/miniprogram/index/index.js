@@ -1,1 +1,1 @@
-require("src/index.min.js")
+require("src/index.js")

@@ -156,8 +156,8 @@ val jsWeChatMinifiedBuild by tasks.registering {
                 kotlinNodeJsEnvSpec.executable.get(),
                 "${rootDir}/build/js/node_modules/uglify-js/bin/uglifyjs",
                 "${rootDir}/wechat/miniprogram/index/src/index.js",
-                "-o", "${rootDir}/wechat/miniprogram/index/src/index.min.js",
-                "--source-map", "url='${rootDir}/wechat/miniprogram/index/src/index.min.js.map'",
+                "-o", "${rootDir}/wechat/miniprogram/index/src/index.js",
+                "--source-map", "url='${rootDir}/wechat/miniprogram/index/src/index.js.map'",
                 "--compress"
             )
         }
