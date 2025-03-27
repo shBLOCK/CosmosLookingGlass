@@ -153,22 +153,18 @@ val jsWeChatBuild by tasks.registering {
     }
 }
 
-val jsWeChatMinify by tasks.registering {
-    inputs.file("${rootDir}/wechat/miniprogram/index/src/index.js")
-    outputs.file("${rootDir}/wechat/miniprogram/index/src/index.min.js")
-    exec {
-        commandLine(
-            kotlinNodeJsEnvSpec.executable.get(),
-            "${rootDir}/build/js/node_modules/uglify-js/bin/uglifyjs",
-            "${rootDir}/wechat/miniprogram/index/src/index.js",
-            "-o", "${rootDir}/wechat/miniprogram/index/src/index.min.js",
-            "--source-map", "url='${rootDir}/wechat/miniprogram/index/src/index.min.js.map'",
-            "--compress"
-        )
-    }
-}
-
 val jsWeChatMinifiedBuild by tasks.registering {
     dependsOn(jsWeChatBuild)
-    finalizedBy(jsWeChatMinify)
+    doLast {
+        exec {
+            commandLine(
+                kotlinNodeJsEnvSpec.executable.get(),
+                "${rootDir}/build/js/node_modules/uglify-js/bin/uglifyjs",
+                "${rootDir}/wechat/miniprogram/index/src/index.js",
+                "-o", "${rootDir}/wechat/miniprogram/index/src/index.min.js",
+                "--source-map", "url='${rootDir}/wechat/miniprogram/index/src/index.min.js.map'",
+                "--compress"
+            )
+        }
+    }
 }
