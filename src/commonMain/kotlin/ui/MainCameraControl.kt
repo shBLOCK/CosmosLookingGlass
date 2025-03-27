@@ -11,7 +11,10 @@ import de.fabmax.kool.scene.OrthographicCamera
 import de.fabmax.kool.scene.PerspectiveCamera
 import de.fabmax.kool.util.Time
 import de.fabmax.kool.util.Viewport
+import utils.atan2
 import utils.expDecaySnapping
+import utils.rotate
+import kotlin.math.PI
 import kotlin.math.exp
 import kotlin.math.max
 import kotlin.math.tan
@@ -19,12 +22,12 @@ import kotlin.math.tan
 class MainCameraControl(val view: RenderPass.View) : Node(), InputStack.PointerListener {
     companion object {
         private val DEFAULT_HALF_FOV = 35.0.deg
-        private const val MIN_HALF_FOV_RAD = 0.03
+        private const val MIN_HALF_FOV_RAD = 0.02
 
         private const val SCROLL_ZOOM_SPEED = 0.1
         private const val DRAG_ROTATE_SPEED = 0.15
 
-        private const val MAX_FAR_TO_NEAR_RATIO = 1e7
+        private const val MAX_FAR_TO_NEAR_RATIO = 3e5
     }
 
     init {
@@ -39,41 +42,83 @@ class MainCameraControl(val view: RenderPass.View) : Node(), InputStack.PointerL
     val targetParams = Params()
     val params = Params()
 
-    private var scrollZoom = 0.0
-    private var scrollZoomCenter = Vec2d.ZERO
-
-    private var dragRotate = Vec2d.ZERO
-
-    private var dragTranslate = Vec2d.ZERO
-
     private val pointers = mutableListOf<Pointer>()
+    private var lastGesturePtrPair: Pair<Vec2d, Vec2d>? = null
 
     override fun handlePointer(pointerState: PointerState, ctx: KoolContext) {
         pointerState.getActivePointers(pointers)
 
+        // single pointer
         if (pointers.size == 1) {
             val pointer = pointers[0]
-            if (pointer.scroll.y != 0F) {
-                scrollZoom = pointer.scroll.y.toDouble() * -SCROLL_ZOOM_SPEED
-                scrollZoomCenter = viewport.sdr(pointer.pos.toVec2d())
-            }
-            if (pointer.isLeftButtonDown) {
-                dragRotate = pointer.delta.toMutableVec2d()
-                    .mul(pointer.windowScale.toDouble() * DRAG_ROTATE_SPEED)
-                    .apply { y = -y }
-            }
-            if (pointer.isRightButtonDown) {
-                dragTranslate = pointer.delta.toMutableVec2d().apply {
-                    divAssign(viewport.size.y.toDouble())
-                    mul(2.0)
-                    y = -y
+
+            with(targetParams) {
+                if (pointer.isRightButtonDown) {
+                    val translation = pointer.delta.toMutableVec2d().apply {
+                        divAssign(viewport.size.y.toDouble())
+                        mul(2.0)
+                        y = -y
+                    }
+                    center.subtract(sdrOnMainPlaneLocal(translation))
+                }
+
+                if (pointer.scroll.y != 0F) {
+                    val zoom = pointer.scroll.y.toDouble() * -SCROLL_ZOOM_SPEED
+                    center.subtract(sdrOnMainPlaneLocal(pointer.sdr) * zoom)
+                    halfSize *= 1.0 + zoom
+                }
+
+                if (pointer.isLeftButtonDown) {
+                    val rot = pointer.delta.toMutableVec2d()
+                        .mul(pointer.windowScale.toDouble() * DRAG_ROTATE_SPEED)
+                        .apply { y = -y }
+                    orientation = orientation.rotateByEulers(Vec3d(rot.y, -rot.x, 0.0), EulerOrder.ZYX)
+                }
+
+                if (pointer.isMiddleButtonClicked) {
+                    halfFov = if (halfFov.rad == 0.0) 35.0.deg else 0.0.rad
                 }
             }
-            if (pointer.isMiddleButtonClicked) {
-                targetParams.halfFov = if (targetParams.halfFov.rad == 0.0) 35.0.deg else 0.0.rad
-            }
-        } else if (pointers.size > 1) {
+        }
 
+        // double pointer gesture
+        if (pointers.size == 2) {
+            if (lastGesturePtrPair == null) snapToCurrent()
+
+            val current = pointers[0].sdr to pointers[1].sdr
+
+            with(targetParams) {
+                lastGesturePtrPair?.also { last ->
+                    val lastCenter = (last.first + last.second) / 2.0
+                    val currentCenter = (current.first + current.second) / 2.0
+                    val lastDist = last.first.distance(last.second)
+                    val currentDist = current.first.distance(current.second)
+                    val lastAngle = atan2(last.second - last.first)
+                    val currentAngle = atan2(current.second - current.first)
+
+                    val translation = currentCenter - lastCenter
+                    if (!translation.isFuzzyEqual(Vec2d.ZERO)) {
+                        center.subtract(sdrOnMainPlaneLocal(translation))
+                    }
+
+                    val zoom = 1.0 - currentDist / lastDist
+                    if (!zoom.isFuzzyZero()) {
+                        center.subtract(sdrOnMainPlaneLocal(currentCenter) * zoom)
+                        halfSize *= 1.0 + zoom
+                    }
+
+                    val rot = (currentAngle - lastAngle).wrap(-PI, PI)
+                    val axis = sdrRayLocal(currentCenter)
+                        .also { it.origin.add(center) }
+                        .also { it.direction.norm() }
+                    orientation = orientation.rotate(rot.rad, axis.direction)
+                    center.rotate(rot.rad, axis)
+                }
+            }
+
+            lastGesturePtrPair = current
+        } else {
+            lastGesturePtrPair = null
         }
     }
 
@@ -81,43 +126,28 @@ class MainCameraControl(val view: RenderPass.View) : Node(), InputStack.PointerL
     fun snapToTarget() = params.set(targetParams)
 
     override fun update(updateEvent: RenderPass.UpdateEvent) {
-        if (scrollZoom != 0.0) {
-            targetParams.center.subtract(targetParams.sdrOnMainPlane(scrollZoomCenter) * scrollZoom)
-            targetParams.halfSize *= 1.0 + scrollZoom
-            scrollZoom = 0.0
-        }
-
-        if (dragTranslate != Vec2d.ZERO) {
-            targetParams.center.subtract(targetParams.sdrOnMainPlane(dragTranslate))
-            dragTranslate = Vec2d.ZERO
-        }
-
-        if (dragRotate != Vec2d.ZERO) {
-            targetParams.orientation = targetParams.orientation
-                .rotateByEulers(Vec3d(dragRotate.y, -dragRotate.x, 0.0), EulerOrder.ZYX)
-            dragRotate = Vec2d.ZERO
-        }
-
         targetParams.nearClipDist = targetParams.halfSize / tan(max(targetParams.halfFov.rad, DEFAULT_HALF_FOV.rad)) - 1
 
-        // Smooth motion
-        params.halfFov = params.halfFov.rad.expDecaySnapping(targetParams.halfFov.rad, 12.0).rad
-        params.halfSize = params.halfSize.expDecaySnapping(targetParams.halfSize, 24.0)
-        params.nearClipDist = params.nearClipDist.expDecaySnapping(targetParams.nearClipDist, 24.0)
-        params.center.expDecaySnapping(targetParams.center, 24.0)
-        params.orientation =
-            params.orientation
-                .mix(targetParams.orientation, exp(-8.0 * Time.deltaT), result = params.orientation)
-                .norm()
-        params.absFarClip = targetParams.absFarClip
-
         with(params) {
-            var dirDist = halfSize / halfFov.tan
-            if (!camera.isZeroToOneDepth) {
-                val nearClip = dirDist - nearClipDist
-                // avoid too small near clip values to avoid depth precision artifacts in non-reverse depth mode
-                if (absFarClip / nearClip > MAX_FAR_TO_NEAR_RATIO) {
-                    nearClipDist = dirDist - absFarClip / MAX_FAR_TO_NEAR_RATIO
+            // smooth motion
+            halfFov = halfFov.rad.expDecaySnapping(targetParams.halfFov.rad, 12.0).rad
+            halfSize = halfSize.expDecaySnapping(targetParams.halfSize, 24.0)
+            nearClipDist = nearClipDist.expDecaySnapping(targetParams.nearClipDist, 24.0)
+            center.expDecaySnapping(targetParams.center, 24.0)
+            orientation = orientation
+                .mix(targetParams.orientation, exp(-8.0 * Time.deltaT), result = orientation)
+                .norm()
+            farClipDist = targetParams.farClipDist
+
+            if (halfFov.rad > MIN_HALF_FOV_RAD) {
+                var d = halfSize / halfFov.tan
+                if (true || !camera.isZeroToOneDepth) {
+                    val nearClip = d - nearClipDist
+                    val farClip = d + farClipDist
+                    // avoid too small near clip values to avoid depth precision artifacts in legacy depth mode
+                    if (farClip / nearClip > MAX_FAR_TO_NEAR_RATIO) {
+                        nearClipDist = d - farClip / MAX_FAR_TO_NEAR_RATIO
+                    }
                 }
             }
         }
@@ -140,6 +170,8 @@ class MainCameraControl(val view: RenderPass.View) : Node(), InputStack.PointerL
     /** SDR ("Standard device coordinates"): like NDR, but only normalized on the y direction (aspect ratio dependent) */
     fun Viewport.sdr(scrPos: Vec2d) = ndr(scrPos).run { Vec2d(x * aspectRatio, y) }
 
+    val Pointer.sdr get() = viewport.sdr(pos.toVec2d())
+
     inner class Params {
         /** Single side fov (half of normal fov) */
         var halfFov: AngleD = 35.0.deg
@@ -153,8 +185,8 @@ class MainCameraControl(val view: RenderPass.View) : Node(), InputStack.PointerL
         /** Distance between [center] and near clip plane */
         var nearClipDist = halfSize / DEFAULT_HALF_FOV.tan - 1.0
 
-        /** Absolute far clip plane distance */
-        var absFarClip = 1e15
+        /** Distance between [center] and far clip plane */
+        var farClipDist = 1e13
 
         var orientation = MutableQuatD()
             set(value) {
@@ -165,7 +197,7 @@ class MainCameraControl(val view: RenderPass.View) : Node(), InputStack.PointerL
         fun set(target: Params) {
             halfFov = target.halfFov
             nearClipDist = target.nearClipDist
-            absFarClip = target.absFarClip
+            farClipDist = target.farClipDist
             center.set(target.center)
             halfSize = target.halfSize
             orientation = orientation.set(target.orientation)
@@ -201,7 +233,6 @@ class MainCameraControl(val view: RenderPass.View) : Node(), InputStack.PointerL
 
             camera.up.set(up)
             camera.lookAt.set(center + dir)
-            camera.clipFar = absFarClip.toFloat()
 
             camera.also { cam ->
                 when (cam) {
@@ -209,6 +240,7 @@ class MainCameraControl(val view: RenderPass.View) : Node(), InputStack.PointerL
                         cam.top = halfSize.toFloat()
                         cam.bottom = -halfSize.toFloat()
                         cam.clipNear = 0F
+                        cam.clipFar = (nearClipDist + farClipDist).toFloat()
                         cam.position.set(center + dir * -nearClipDist)
                     }
 
@@ -217,16 +249,30 @@ class MainCameraControl(val view: RenderPass.View) : Node(), InputStack.PointerL
                         val d = halfSize / halfFov.tan
                         cam.position.set(center + dir * -d)
                         cam.clipNear = (d - nearClipDist).toFloat()
+                        cam.clipFar = (d + farClipDist).toFloat()
                     }
                 }
             }
         }
 
-        fun sdrDir(sdr: Vec2d) =
+        /**
+         * Ray from the near plane to the far plane. Actual length, not normalized. Not translated by [center].
+         */
+        fun sdrRayLocal(sdr: Vec2d): RayD {
             if (halfFov.rad > MIN_HALF_FOV_RAD) {
-                orientationMat.transform(MutableVec3d(sdr.x, sdr.y, 1.0 / halfFov.tan))
-            } else dir
+                val d = halfSize / halfFov.tan
+                val near = d - nearClipDist
+                val far = d + farClipDist
+                val point = sdrOnMainPlaneLocal(sdr)
+                val nearPoint = point * (near / d) - dir * nearClipDist
+                val farPoint = point * (far / d) + dir * farClipDist
+                return RayD(nearPoint, farPoint - nearPoint)
+            } else {
+                val point = sdrOnMainPlaneLocal(sdr)
+                return RayD(point - dir * nearClipDist, dir * (nearClipDist + farClipDist))
+            }
+        }
 
-        fun sdrOnMainPlane(sdr: Vec2d) = right * (sdr.x * halfSize) + up * (sdr.y * halfSize)
+        fun sdrOnMainPlaneLocal(sdr: Vec2d) = right * (sdr.x * halfSize) + up * (sdr.y * halfSize)
     }
 }

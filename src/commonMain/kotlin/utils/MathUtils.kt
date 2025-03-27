@@ -2,15 +2,19 @@
 
 package utils
 
+import de.fabmax.kool.math.AngleD
 import de.fabmax.kool.math.MutableQuatD
 import de.fabmax.kool.math.MutableVec3d
 import de.fabmax.kool.math.QuatD
+import de.fabmax.kool.math.RayD
+import de.fabmax.kool.math.Vec2d
 import de.fabmax.kool.math.Vec3d
 import de.fabmax.kool.math.clamp
 import de.fabmax.kool.math.expDecay
 import de.fabmax.kool.math.isFuzzyEqual
 import de.fabmax.kool.util.Time
 import kotlin.math.acos
+import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -64,3 +68,11 @@ val Int.nextPowerOfTwo get() = if (this and (this - 1) == 0) this else 1 shl (32
 val Int.prevPowerOfTwo get() = if (this and (this - 1) == 0) this else 1 shl (32 - countLeadingZeroBits() - 1)
 
 fun Int.ceilDiv(other: Int) = this.floorDiv(other) + if (this % other == 0) 0 else 1
+
+inline fun atan2(xy: Vec2d) = atan2(xy.y, xy.x)
+
+fun MutableVec3d.rotate(angle: AngleD, axis: RayD) = this.apply {
+    subtract(axis.origin)
+    rotate(angle, axis.direction)
+    add(axis.origin)
+}
