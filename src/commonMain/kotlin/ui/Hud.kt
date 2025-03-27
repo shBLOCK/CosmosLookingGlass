@@ -14,6 +14,7 @@ class Hud(
     val cbToTrail = mutableMapOf<CelestialBody, Trail>()
 
     private val trailManager = TrailManager().apply {
+        solarSystem.onUpdate { update() }
         solarSystem.celestialBodies.forEach { body ->
             trails += Trail(body).also {
                 solarSystem += it.meshInstances[0]
@@ -57,10 +58,6 @@ class Hud(
 
     val scene = UiScene {
         this += hud
-
-        onUpdate {
-            trailManager.update()
-        }
     }
 
     private inner class TrailManager {

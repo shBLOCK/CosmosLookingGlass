@@ -62,3 +62,5 @@ fun slerpShortest(quatA: QuatD, quatB: QuatD, f: Double, result: MutableQuatD = 
 
 val Int.nextPowerOfTwo get() = if (this and (this - 1) == 0) this else 1 shl (32 - countLeadingZeroBits())
 val Int.prevPowerOfTwo get() = if (this and (this - 1) == 0) this else 1 shl (32 - countLeadingZeroBits() - 1)
+
+fun Int.ceilDiv(other: Int) = this.floorDiv(other) + if (this % other == 0) 0 else 1
