@@ -23,6 +23,8 @@ class MainCameraControl(val view: RenderPass.View) : Node(), InputStack.PointerL
 
         private const val SCROLL_ZOOM_SPEED = 0.1
         private const val DRAG_ROTATE_SPEED = 0.15
+
+        private const val MAX_FAR_TO_NEAR_RATIO = 1e7
     }
 
     init {
@@ -31,8 +33,8 @@ class MainCameraControl(val view: RenderPass.View) : Node(), InputStack.PointerL
     }
 
     val viewport by view::viewport
-    var _camera by view::camera
-    inline val camera get() = _camera
+    var camera by view::camera
+        private set
 
     val targetParams = Params()
     val params = Params()
@@ -95,15 +97,29 @@ class MainCameraControl(val view: RenderPass.View) : Node(), InputStack.PointerL
             dragRotate = Vec2d.ZERO
         }
 
-        targetParams.nearClipDist = targetParams.halfSize / tan(max(targetParams.halfFov.rad, DEFAULT_HALF_FOV.rad)) - 1.0
+        targetParams.nearClipDist = targetParams.halfSize / tan(max(targetParams.halfFov.rad, DEFAULT_HALF_FOV.rad)) - 1
 
         // Smooth motion
         params.halfFov = params.halfFov.rad.expDecaySnapping(targetParams.halfFov.rad, 12.0).rad
         params.halfSize = params.halfSize.expDecaySnapping(targetParams.halfSize, 24.0)
         params.nearClipDist = params.nearClipDist.expDecaySnapping(targetParams.nearClipDist, 24.0)
         params.center.expDecaySnapping(targetParams.center, 24.0)
-        params.orientation = params.orientation.mix(targetParams.orientation, exp(-8.0 * Time.deltaT), result = params.orientation).norm()
+        params.orientation =
+            params.orientation
+                .mix(targetParams.orientation, exp(-8.0 * Time.deltaT), result = params.orientation)
+                .norm()
         params.absFarClip = targetParams.absFarClip
+
+        with(params) {
+            var dirDist = halfSize / halfFov.tan
+            if (!camera.isZeroToOneDepth) {
+                val nearClip = dirDist - nearClipDist
+                // avoid too small near clip values to avoid depth precision artifacts in non-reverse depth mode
+                if (absFarClip / nearClip > MAX_FAR_TO_NEAR_RATIO) {
+                    nearClipDist = dirDist - absFarClip / MAX_FAR_TO_NEAR_RATIO
+                }
+            }
+        }
 
         params.apply()
 
@@ -177,16 +193,16 @@ class MainCameraControl(val view: RenderPass.View) : Node(), InputStack.PointerL
 
         fun apply() {
             if (halfFov.rad <= MIN_HALF_FOV_RAD) {
-                if (_camera !is OrthographicCamera) _camera = OrthographicCamera()
+                if (camera !is OrthographicCamera) camera = OrthographicCamera()
             } else {
-                if (_camera !is PerspectiveCamera) _camera = PerspectiveCamera()
+                if (camera !is PerspectiveCamera) camera = PerspectiveCamera()
             }
 
-            _camera.up.set(up)
-            _camera.lookAt.set(center + dir)
-            _camera.clipFar = absFarClip.toFloat()
+            camera.up.set(up)
+            camera.lookAt.set(center + dir)
+            camera.clipFar = absFarClip.toFloat()
 
-            _camera.also { cam ->
+            camera.also { cam ->
                 when (cam) {
                     is OrthographicCamera -> {
                         cam.top = halfSize.toFloat()
