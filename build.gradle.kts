@@ -39,7 +39,6 @@ kotlin {
 
     sourceSets {
         val lwjglVersion = "3.3.6"
-        val physxJniVersion = "2.5.1"
 
         // JVM target platforms, you can remove entries from the list in case you want to target
         // only a specific platform
@@ -60,16 +59,13 @@ kotlin {
             dependencies {
                 // add additional jvm-specific dependencies here...
 
-                // add required runtime libraries for lwjgl and physx-jni
+                // add required runtime libraries for lwjgl
                 for (platform in targetPlatforms) {
                     // lwjgl runtime libs
                     runtimeOnly("org.lwjgl:lwjgl:$lwjglVersion:$platform")
                     listOf("glfw", "opengl", "jemalloc", "nfd", "stb", "vma", "shaderc").forEach { lib ->
                         runtimeOnly("org.lwjgl:lwjgl-$lib:$lwjglVersion:$platform")
                     }
-
-                    // physx-jni runtime libs
-                    runtimeOnly("de.fabmax:physx-jni:$physxJniVersion:$platform")
                 }
             }
         }
@@ -146,7 +142,6 @@ val jsWeChatBuild by tasks.registering {
         copy {
             from(files("${rootDir}/dist/js")) {
                 exclude("index.html")
-                exclude("physx-js-webidl.wasm") // tmp?
             }
             into("${rootDir}/wechat/miniprogram/index/src")
         }
