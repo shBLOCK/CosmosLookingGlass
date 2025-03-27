@@ -35,6 +35,8 @@ class IntFract(val int: Long, val fract: Double) {
 
     override inline fun hashCode() = int.hashCode() xor fract.hashCode()
 
+    override fun toString() = "($int+$fract)"
+
     inline fun toDouble() = int + fract
 
     companion object {
