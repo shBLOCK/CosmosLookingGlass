@@ -64,17 +64,18 @@ class KeplerModel(
 
         val timeClamped = IntFract(time.int.coerceIn(timeMin, timeMax), time.fract)
 
-        val centuriesClamped = timeClamped.j2000Centuries
-        val ca = _a + _da * centuriesClamped
-        val ce = _e + _de * centuriesClamped
-        val cI = _I + _dI * centuriesClamped
-        val cL = _L + _dL * centuriesClamped
-        val clp = _lp + _dlp * centuriesClamped
-        val clan = _lan + _dlan * centuriesClamped
+        val T = time.j2000Centuries
+        val Tcl = timeClamped.j2000Centuries
+        val ca = _a + _da * Tcl
+        val ce = _e + _de * Tcl
+        val cI = _I + _dI * Tcl
+        val cL = _L + _dL * T
+        val clp = _lp + _dlp * Tcl
+        val clan = _lan + _dlan * Tcl
 
         val ap = clp - clan
-        val M_full = cL - clp + ftB * centuriesClamped * centuriesClamped +
-            ftC * cos(ftF * centuriesClamped) + ftS * sin(ftF * centuriesClamped)
+        val M_full = cL - clp + ftB * Tcl * Tcl +
+            ftC * cos(ftF * T) + ftS * sin(ftF * T)
         val M = M_full.wrap(-PI, PI)
 
         val E = solveKeplerEq(ce, M)
