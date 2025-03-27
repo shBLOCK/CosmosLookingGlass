@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalDistributionDsl
+import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsPlugin.Companion.kotlinNodeJsEnvSpec
 import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
 
 plugins {
@@ -35,7 +36,7 @@ kotlin {
             target.set("es2015")
         }
     }
-    
+
     sourceSets {
         val lwjglVersion = "3.3.6"
         val physxJniVersion = "2.5.1"
@@ -72,10 +73,10 @@ kotlin {
                 }
             }
         }
-        
+
         val jsMain by getting {
             dependencies {
-                // add additional js-specific dependencies here...
+                implementation(devNpm("uglify-js", "3.19.3"))
             }
         }
     }
@@ -150,4 +151,24 @@ val jsWeChatBuild by tasks.registering {
             into("${rootDir}/wechat/miniprogram/index/src")
         }
     }
+}
+
+val jsWeChatMinify by tasks.registering {
+    inputs.file("${rootDir}/wechat/miniprogram/index/src/index.js")
+    outputs.file("${rootDir}/wechat/miniprogram/index/src/index.min.js")
+    exec {
+        commandLine(
+            kotlinNodeJsEnvSpec.executable.get(),
+            "${rootDir}/build/js/node_modules/uglify-js/bin/uglifyjs",
+            "${rootDir}/wechat/miniprogram/index/src/index.js",
+            "-o", "${rootDir}/wechat/miniprogram/index/src/index.min.js",
+            "--source-map", "url='${rootDir}/wechat/miniprogram/index/src/index.min.js.map'",
+            "--compress"
+        )
+    }
+}
+
+val jsWeChatMinifiedBuild by tasks.registering {
+    dependsOn(jsWeChatBuild)
+    finalizedBy(jsWeChatMinify)
 }
