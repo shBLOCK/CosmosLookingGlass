@@ -21,7 +21,7 @@
     },
     "appid": "wx70e1c26b9845f0f6",
     "projectname": "SolarUtils",
-    "libVersion": "3.7.7",
+    "libVersion": "3.7.11",
     "compileType": "miniprogram",
     "srcMiniprogramRoot": "miniprogram/",
     "packOptions": {
