@@ -50,6 +50,7 @@ class MainCameraControl(val view: RenderPass.View) : Node(), InputStack.PointerL
 
     override fun handlePointer(pointerState: PointerState, ctx: KoolContext) {
         pointerState.getActivePointers(pointers)
+
         if (pointers.size == 1) {
             val pointer = pointers[0]
             if (pointer.scroll.y != 0F) {

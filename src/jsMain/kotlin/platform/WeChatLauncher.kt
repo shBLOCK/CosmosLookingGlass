@@ -170,8 +170,6 @@ internal fun weChatMain() {
 
     @Suppress("unused")
     class WxTouchList(private val _array: Array<WxTouch>) {
-        constructor(touchList: dynamic) : this(touchList.map { touch -> WxTouch(touch) }.unsafeCast<Array<WxTouch>>())
-
         @JsName("length")
         val length = _array.size
 
@@ -180,6 +178,9 @@ internal fun weChatMain() {
     }
     globalThis.TouchList = WxTouchList(arrayOf()).jsConstructor
 
+    fun nativeToWxTouchList(touchList: dynamic) =
+        WxTouchList(touchList.map { touch -> WxTouch(touch) }.unsafeCast<Array<WxTouch>>())
+
     @Suppress("unused")
     class WxTouchEvent(
         @JsName("changedTouches") val changedTouches: WxTouchList,
@@ -187,8 +188,8 @@ internal fun weChatMain() {
     ) {
         @Suppress("UnsafeCastFromDynamic")
         constructor(event: dynamic) : this(
-            WxTouchList(event.changedTouches),
-            WxTouchList(event.touches)
+            nativeToWxTouchList(event.changedTouches),
+            nativeToWxTouchList(event.touches)
         )
 
         @JsName("preventDefault")
