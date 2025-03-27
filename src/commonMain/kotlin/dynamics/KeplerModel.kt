@@ -122,5 +122,9 @@ class KeplerModel(
         }
     }
 
-    override fun copy() = this
+    override fun copy() = KeplerModel(
+        _a, _e, _I, _L, _lp, _lan, _da, _de, _dI, _dL, _dlp, _dlan,
+        ftB, ftC, ftS, ftF,
+        timeMin, timeMax
+    )
 }

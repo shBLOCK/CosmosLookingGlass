@@ -57,5 +57,5 @@ class SolarSystemKeplerModel3000BC3000AD : SolarSystemKeplerModelBase() {
 //    }
     override val moonPos = emBaryPos
 
-    override fun copy() = SolarSystemKeplerModel3000BC3000AD().also { it.time = time }
+    override fun copy() = SolarSystemKeplerModel3000BC3000AD()
 }
