@@ -96,8 +96,12 @@ internal fun weChatMain() {
         @Suppress("unused")
         addEventListener = fun(name: String, handler: (dynamic) -> dynamic) {}
 
-        requestAnimationFrame = fun(handler: dynamic) {
-            WxGlobals.canvas.requestAnimationFrame(handler)
+        var animationFrameBeginningTimestamp: Double? = null
+        requestAnimationFrame = fun(handler: (Double) -> Unit) {
+            WxGlobals.canvas.requestAnimationFrame { t: Double ->
+                if (animationFrameBeginningTimestamp == null) animationFrameBeginningTimestamp = t
+                handler(t - animationFrameBeginningTimestamp + 1)
+            }
         }
 
         devicePixelRatio = js("wx").getWindowInfo().pixelRatio
