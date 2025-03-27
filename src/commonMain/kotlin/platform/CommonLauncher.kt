@@ -8,6 +8,8 @@ import ui.MainCameraControl
 import universe.SolarSystemScene
 
 fun launchApp(ctx: KoolContext) {
+    ctx.initRenderBackendEx()
+
     val solarSystem = SolarSystemScene().apply {
         this += MainCameraControl(mainRenderPass.defaultView)
     }.also(ctx.scenes::stageAdd)
