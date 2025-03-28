@@ -9,6 +9,7 @@ import de.fabmax.kool.pipeline.RenderPass
 import de.fabmax.kool.scene.Node
 import de.fabmax.kool.scene.OrthographicCamera
 import de.fabmax.kool.scene.PerspectiveCamera
+import de.fabmax.kool.util.BaseReleasable
 import de.fabmax.kool.util.Time
 import de.fabmax.kool.util.Viewport
 import utils.atan2
@@ -19,7 +20,7 @@ import kotlin.math.exp
 import kotlin.math.max
 import kotlin.math.tan
 
-class MainCameraControl(val view: RenderPass.View) : Node(), InputStack.PointerListener {
+class MainCameraControl(val view: RenderPass.View) : BaseReleasable(), InputStack.PointerListener {
     companion object {
         private val DEFAULT_HALF_FOV = 35.0.deg
         private const val MIN_HALF_FOV_RAD = 0.02
@@ -125,7 +126,7 @@ class MainCameraControl(val view: RenderPass.View) : Node(), InputStack.PointerL
     fun snapToCurrent() = targetParams.set(params)
     fun snapToTarget() = params.set(targetParams)
 
-    override fun update(updateEvent: RenderPass.UpdateEvent) {
+    fun update() {
         targetParams.nearClipDist = targetParams.halfSize / tan(max(targetParams.halfFov.rad, DEFAULT_HALF_FOV.rad)) - 1
 
         with(params) {
@@ -153,8 +154,6 @@ class MainCameraControl(val view: RenderPass.View) : Node(), InputStack.PointerL
         }
 
         params.apply()
-
-        super.update(updateEvent)
     }
 
     inline val Viewport.pos get() = Vec2i(x, y)

@@ -3,7 +3,6 @@ package universe
 import de.fabmax.kool.pipeline.RenderPass
 import utils.IntFract
 import de.fabmax.kool.scene.Scene
-import de.fabmax.kool.util.Time
 import dynamics.SolarSystemDynModel
 import dynamics.SolarSystemKeplerModel3000BC3000AD
 
@@ -12,7 +11,7 @@ class SolarSystemScene : Scene() {
         mainRenderPass.isDoublePrecision = true
     }
 
-    var time = IntFract(0.0)
+    var time = IntFract(0)
 
     var dynModel: SolarSystemDynModel = SolarSystemKeplerModel3000BC3000AD() //TODO: selectable model
 
@@ -41,7 +40,6 @@ class SolarSystemScene : Scene() {
     }
 
     override fun update(updateEvent: RenderPass.UpdateEvent) {
-        time += Time.deltaT.toDouble() * 60 * 60 * 24 * 24
         dynModel.seek(time)
 
         super.update(updateEvent)

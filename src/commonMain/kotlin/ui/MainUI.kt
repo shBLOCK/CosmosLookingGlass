@@ -3,14 +3,16 @@ package ui
 import de.fabmax.kool.modules.ui2.UiScene
 import de.fabmax.kool.modules.ui2.UiSurface
 import de.fabmax.kool.modules.ui2.layout
-import de.fabmax.kool.util.Time
+import de.fabmax.kool.util.BaseReleasable
 import universe.CelestialBody
 import universe.SolarSystemScene
-import kotlin.math.sin
 
-class Hud(
-    val solarSystem: SolarSystemScene
-) {
+class MainUI(private val solarSystem: SolarSystemScene) : BaseReleasable() {
+    private var time by solarSystem::time
+
+    val cameraControl = MainCameraControl(solarSystem.mainRenderPass.defaultView)
+        .apply { solarSystem.onUpdate { update() } }
+
     val cbToTrail = mutableMapOf<CelestialBody, Trail>()
 
     private val trailManager = TrailManager().apply {
