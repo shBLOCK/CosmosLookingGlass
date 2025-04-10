@@ -163,14 +163,16 @@ class Trail(val celestialBody: CelestialBody) : BaseReleasable() {
             val dyn = celestialBody.dynModel.copyTyped()
             if (endStep > tailStep) {
                 tailStep = (endStep + (batchSize - 1)).also {
-                    dyn.generate((tailStep + 1)..it)
+                    dyn.generate(max(tailStep + 1, startStep)..it)
                     headStep = max(headStep, it - (size - 1))
+                    if (startStep > tailStep + 1) headStep = startStep
                 }
             }
             if (startStep < headStep) {
                 headStep = (startStep - (batchSize - 1)).also {
-                    dyn.generate(it..(headStep - 1))
+                    dyn.generate(it..min(headStep - 1, endStep))
                     tailStep = min(tailStep, it + (size - 1))
+                    if (endStep < headStep - 1) tailStep = endStep
                 }
             }
 

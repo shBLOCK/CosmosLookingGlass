@@ -40,6 +40,7 @@ class IntFract(val int: Long, val fract: Double) {
     inline fun toDouble() = int + fract
 
     companion object {
+        val ZERO = IntFract(0)
         val MIN = IntFract(Long.MIN_VALUE, 0.0)
         val MAX = IntFract(Long.MAX_VALUE, 1.0.nextDown())
 
@@ -56,3 +57,6 @@ inline fun IntFract.ceilDiv(other: Long) = int.floorDiv(other) + if (int % other
 
 inline fun IntFract.mod(other: Int) = int.mod(other) + fract
 inline fun IntFract.mod(other: Long) = int.mod(other) + fract
+
+inline fun min(a: IntFract, b: IntFract) = if (a < b) a else b
+inline fun max(a: IntFract, b: IntFract) = if (a > b) a else b
