@@ -76,3 +76,6 @@ fun MutableVec3d.rotate(angle: AngleD, axis: RayD) = this.apply {
     rotate(angle, axis.direction)
     add(axis.origin)
 }
+
+fun mix(a: Float, b: Float, t: Float) = a + (b - a) * t
+fun mix(a: Double, b: Double, t: Double) = a + (b - a) * t
