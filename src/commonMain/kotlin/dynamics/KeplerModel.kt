@@ -5,7 +5,7 @@ import de.fabmax.kool.math.MutableVec3d
 import de.fabmax.kool.math.deg
 import de.fabmax.kool.math.wrap
 import utils.IntFract
-import utils.j2000Centuries
+import utils.j2000
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
@@ -64,8 +64,8 @@ class KeplerModel(
 
         val timeClamped = IntFract(time.int.coerceIn(timeMin, timeMax), time.fract)
 
-        val T = time.j2000Centuries
-        val Tcl = timeClamped.j2000Centuries
+        val T = time.j2000.centuries
+        val Tcl = timeClamped.j2000.centuries
         val ca = _a + _da * Tcl
         val ce = _e + _de * Tcl
         val cI = _I + _dI * Tcl
