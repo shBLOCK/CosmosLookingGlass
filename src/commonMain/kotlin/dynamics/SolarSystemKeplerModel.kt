@@ -5,6 +5,7 @@ import de.fabmax.kool.math.Vec3d
 import de.fabmax.kool.math.deg
 import universe.SolarSystemConsts
 import utils.IntFractTime
+import utils.SPEED_OF_LIGHT
 import utils.au
 
 abstract class SolarSystemKeplerModelBase : SolarSystemOrientatedModel() {
@@ -23,7 +24,7 @@ abstract class SolarSystemKeplerModelBase : SolarSystemOrientatedModel() {
         ).filter { (model, objMass) -> objMass > 1e24 }, // ignore small mass objects
         mass = SolarSystemConsts.SUN_MASS,
         barycenter = Vec3d.ZERO,
-        gravityPropagationSpeed = 0.0 // disable
+        gravityPropagationSpeed = SPEED_OF_LIGHT
     ) }
 }
 
