@@ -75,7 +75,7 @@ class KeplerModel(
 
         val ap = clp - clan
         val M_full = cL - clp + ftB * Tcl * Tcl +
-            ftC * cos(ftF * T) + ftS * sin(ftF * T)
+            ftC * cos(ftF * Tcl) + ftS * sin(ftF * Tcl)
         val M = M_full.wrap(-PI, PI)
 
         val E = solveKeplerEq(ce, M)
