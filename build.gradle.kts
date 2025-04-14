@@ -161,11 +161,6 @@ val jsWeChatBuild by tasks.registering {
     }
 }
 
-val closureCompiler by configurations.creating
-dependencies {
-    closureCompiler("com.google.javascript:closure-compiler:v20250402")
-}
-
 val jsWeChatMinify by tasks.registering(Exec::class) {
     group = "wechat"
 
