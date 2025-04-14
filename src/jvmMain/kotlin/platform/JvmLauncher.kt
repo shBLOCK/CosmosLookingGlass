@@ -8,7 +8,8 @@ fun main() {
     KoolApplication(
         config = KoolConfigJvm(
             windowTitle = "kool Template App",
-            renderBackend = KoolConfigJvm.Backend.OPEN_GL
+            renderBackend = KoolConfigJvm.Backend.OPEN_GL,
+            classloaderAssetPath = "assets"
         )
     ) {
         launchApp(ctx)

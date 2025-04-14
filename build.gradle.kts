@@ -140,8 +140,8 @@ val clean by tasks.getting(Task::class) {
         })
 
         delete("${rootDir}/assets/all")
-        delete("${rootDir}/src/commonMain/resources")
-        delete("${rootDir}/src/jsMain/assets")
+        delete("${rootDir}/src/jvmMain/resources/assets")
+        delete("${rootDir}/src/jsMain/resources/assets")
     }
 }
 
@@ -267,7 +267,7 @@ val deployAssets by tasks.registering {
     doLast {
         copy {
             from("${assetsRoot}/all/")
-            into("${rootDir}/src/commonMain/resources/")
+            into("${rootDir}/src/jvmMain/resources/assets/")
         }
         copy {
             from("${assetsRoot}/all/")

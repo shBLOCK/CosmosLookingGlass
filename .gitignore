@@ -6,5 +6,5 @@
 
 # Deployed assets (see README.md)
 /assets/all/
-/src/commonMain/resources/
+/src/jvmMain/resources/assets/
 /src/jsMain/resources/assets/
