@@ -1,8 +1,9 @@
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
 import org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalDistributionDsl
-import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsPlugin.Companion.kotlinNodeJsEnvSpec
 import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 
 plugins {
     kotlin("multiplatform") version "2.1.20"
@@ -159,22 +160,46 @@ val jsWeChatBuild by tasks.registering {
     }
 }
 
+val closureCompiler by configurations.creating
+dependencies {
+    closureCompiler("com.google.javascript:closure-compiler:v20250402")
+}
+
+val jsWeChatMinify by tasks.registering(JavaExec::class) {
+    group = "wechat"
+
+    val srcRoot = "${rootDir}/wechat/miniprogram/index/src"
+    classpath = closureCompiler
+    mainClass = "com.google.javascript.jscomp.CommandLineRunner"
+    args(
+//        "--compilation_level", "SIMPLE",
+        "--compilation_level", "ADVANCED",
+        "--env", "CUSTOM",
+        "--language_in", "ECMASCRIPT_2015",
+        "--language_out", "ECMASCRIPT_2015",
+        "--jscomp_off", "uselessCode",
+        "--jscomp_off", "const",
+        "--jscomp_off", "suspiciousCode",
+        "--jscomp_off", "undefinedVars",
+        "--js", "${srcRoot}/index.js",
+        "--js_output_file", "${srcRoot}/index.min.js"
+    )
+
+    doLast {
+        Files.move(
+            file("${srcRoot}/index.min.js").toPath(),
+            file("${srcRoot}/index.js").toPath(),
+            StandardCopyOption.REPLACE_EXISTING
+        )
+    }
+}
+
 @Suppress("unused")
 val jsWeChatMinifiedBuild by tasks.registering {
     group = "wechat"
     dependsOn(jsWeChatBuild)
-    doLast {
-        exec {
-            commandLine(
-                kotlinNodeJsEnvSpec.executable.get(),
-                "${rootDir}/build/js/node_modules/uglify-js/bin/uglifyjs",
-                "${rootDir}/wechat/miniprogram/index/src/index.js",
-                "-o", "${rootDir}/wechat/miniprogram/index/src/index.js",
-                "--source-map", "url='${rootDir}/wechat/miniprogram/index/src/index.js.map'",
-                "--compress"
-            )
-        }
-    }
+    dependsOn(jsWeChatMinify)
+    jsWeChatMinify.get().mustRunAfter(jsWeChatBuild)
 }
 
 val assetsRoot = "${rootDir}/assets"
