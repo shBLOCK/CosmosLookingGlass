@@ -4,6 +4,7 @@ import de.fabmax.kool.KoolContext
 import de.fabmax.kool.modules.ui2.AlignmentX
 import de.fabmax.kool.modules.ui2.AlignmentY
 import de.fabmax.kool.modules.ui2.RectBackground
+import de.fabmax.kool.modules.ui2.Sizes
 import de.fabmax.kool.modules.ui2.UiNode
 import de.fabmax.kool.modules.ui2.UiScene
 import de.fabmax.kool.modules.ui2.UiSurface
@@ -14,6 +15,7 @@ import de.fabmax.kool.modules.ui2.size
 import de.fabmax.kool.util.BaseReleasable
 import de.fabmax.kool.util.Color
 import de.fabmax.kool.util.MdColor
+import de.fabmax.kool.util.MsdfFont
 import de.fabmax.kool.util.Time
 import universe.CelestialBody
 import universe.SolarSystemScene
@@ -53,9 +55,16 @@ class MainUI(private val solarSystem: SolarSystemScene) : BaseReleasable() {
 
     var test = 0
 
+    private fun getSizes() = Sizes.medium(
+        normalText = MsdfFont(MsdfFont.FONT_UI_DATA, sizePts = 15F),
+        largeText = MsdfFont(MsdfFont.FONT_UI_DATA, sizePts = 20F)
+    )
+
     val hudSurface = UiSurface(name = "HudSurface").apply {
         onUpdate { triggerUpdate() }
         content = {
+            surface.sizes = getSizes()
+
             viewport.modifier.layout(FreeLayout)
 
 //            for (pl in listOf<CelestialBody>(solarSystem.earth, solarSystem.mercury, solarSystem.jupiter).shuffled()) {
@@ -78,12 +87,15 @@ class MainUI(private val solarSystem: SolarSystemScene) : BaseReleasable() {
 
     val hudUiSurface = UiSurface(name = "HudUiSurface").apply {
         content = {
-            timeControl = uiNode.createChild("TimeControl", TimeControl::class, ::TimeControl).apply {
-                setup()
-                modifier
-                    .align(AlignmentX.Center, AlignmentY.Bottom)
-                    .size(1000.dp, 50.dp)
-                    .background(RectBackground(MdColor.GREY.withAlpha(0.3F)))
+            surface.sizes = getSizes()
+
+                timeControl = uiNode.createChild("TimeControl", TimeControl::class, ::TimeControl).apply {
+                    setup()
+                    modifier
+                        .alignX(AlignmentX.Center)
+                        .size(1000.dp, 50.dp)
+                        .background(RectBackground(MdColor.GREY.withAlpha(0.3F)))
+                }
             }
         }
     }

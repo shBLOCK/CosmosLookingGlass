@@ -1,3 +1,5 @@
+import com.google.gson.GsonBuilder
+import com.google.gson.JsonObject
 import org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalDistributionDsl
 import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsPlugin.Companion.kotlinNodeJsEnvSpec
 import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
@@ -52,7 +54,7 @@ kotlin {
 
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
                 implementation("org.jetbrains.kotlinx:atomicfu:0.27.0")
-
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
             }
         }
@@ -122,16 +124,22 @@ task("runApp", JavaExec::class) {
     mainClass.set("platform.JvmLauncherKt")
 }
 
+@Suppress("unused")
 val build by tasks.getting(Task::class) {
     dependsOn("runnableJar")
 }
 
+@Suppress("unused")
 val clean by tasks.getting(Task::class) {
     doLast {
         delete("${rootDir}/dist")
         delete(fileTree("${rootDir}/wechat/miniprogram/index/src") {
             exclude("README.md")
         })
+
+        delete("${rootDir}/assets/all")
+        delete("${rootDir}/src/commonMain/resources")
+        delete("${rootDir}/src/jsMain/assets")
     }
 }
 
@@ -164,4 +172,90 @@ val jsWeChatMinifiedBuild by tasks.registering {
             )
         }
     }
+}
+
+val assetsRoot = "${rootDir}/assets"
+
+@Suppress("unused")
+val generateAssets by tasks.registering {
+    doFirst {
+        if (!org.gradle.internal.os.OperatingSystem.current().isWindows)
+            throw GradleException("processAssets task only works on windows.")
+    }
+
+    // clean
+    doFirst {
+        delete("${rootDir}/assets/generated")
+        mkdir("${assetsRoot}/generated")
+    }
+
+    // fonts
+    doLast {
+        mkdir("${assetsRoot}/generated/fonts")
+
+        exec {
+            workingDir(assetsRoot)
+            executable("${assetsRoot}/msdf-atlas-gen.exe")
+            args(
+                "-varfont", "NotoSans-VariableFont_wdth,wght.ttf?wght=400",
+                "-type", "mtsdf",
+                "-size", "36",
+                "-chars", "[0x20, 0x7E]",
+                "-imageout", "./generated/fonts/NotoSans.png",
+                "-json", "./generated/fonts/NotoSans.json"
+            )
+        }
+
+        run {
+            val metaFile = file("${assetsRoot}/generated/fonts/NotoSans.json")
+            val gson = GsonBuilder().create()
+            val jsonText = metaFile.readText()
+            val data = gson.fromJson(jsonText, JsonObject::class.java)
+            data.addProperty("name", metaFile.nameWithoutExtension)
+            data["atlas"].asJsonObject.remove("distanceRangeMiddle")
+            metaFile.writeText(gson.toJson(data))
+        }
+    }
+}
+
+val deployAssets by tasks.registering {
+    doFirst {
+        delete("${rootDir}/assets/all")
+        delete("${rootDir}/src/commonMain/resources")
+        delete("${rootDir}/src/jsMain/assets")
+    }
+
+    // merge
+    doLast {
+        copy {
+            from("${assetsRoot}/static/")
+            into("${assetsRoot}/all/")
+        }
+        copy {
+            from("${assetsRoot}/generated/")
+            into("${assetsRoot}/all/")
+        }
+    }
+
+    // deploy
+    doLast {
+        copy {
+            from("${assetsRoot}/all/")
+            into("${rootDir}/src/commonMain/resources/")
+        }
+        copy {
+            from("${assetsRoot}/all/")
+            into("${rootDir}/src/jsMain/resources/assets/")
+        }
+    }
+}
+
+@Suppress("unused")
+val jvmProcessResources by tasks.getting(Task::class) {
+    dependsOn(deployAssets)
+}
+
+@Suppress("unused")
+val jsProcessResources by tasks.getting(Task::class) {
+    dependsOn(deployAssets)
 }

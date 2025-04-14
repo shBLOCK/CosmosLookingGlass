@@ -3,3 +3,8 @@
 /.kotlin/
 /dist/
 /kotlin-js-store/
+
+# Deployed assets (see README.md)
+/assets/all/
+/src/commonMain/resources/
+/src/jsMain/resources/assets/
