@@ -144,6 +144,7 @@ val clean by tasks.getting(Task::class) {
 }
 
 val jsWeChatBuild by tasks.registering {
+    group = "wechat"
     dependsOn(tasks["jsBrowserDistribution"])
     doLast {
         delete(fileTree("${rootDir}/wechat/miniprogram/index/src") {
@@ -158,7 +159,9 @@ val jsWeChatBuild by tasks.registering {
     }
 }
 
+@Suppress("unused")
 val jsWeChatMinifiedBuild by tasks.registering {
+    group = "wechat"
     dependsOn(jsWeChatBuild)
     doLast {
         exec {
@@ -178,6 +181,7 @@ val assetsRoot = "${rootDir}/assets"
 
 @Suppress("unused")
 val generateAssets by tasks.registering {
+    group = "assets"
     doFirst {
         if (!org.gradle.internal.os.OperatingSystem.current().isWindows)
             throw GradleException("processAssets task only works on windows.")
@@ -219,6 +223,7 @@ val generateAssets by tasks.registering {
 }
 
 val deployAssets by tasks.registering {
+    group = "assets"
     doFirst {
         delete("${rootDir}/assets/all")
         delete("${rootDir}/src/commonMain/resources")
