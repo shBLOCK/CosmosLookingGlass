@@ -6,7 +6,7 @@ import de.fabmax.kool.pipeline.backend.webgpu.GPUPowerPreference
 import platform.wechat.WxAssetLoader
 
 private const val CANVAS_NAME = "glCanvas"
-private const val ASSETS_ROOT = "./src/assets"
+private const val ASSETS_ROOT = "src/assets"
 
 internal fun isWeChatEnv() = js("(typeof wx) === 'object'") as Boolean
 
@@ -28,6 +28,7 @@ private object WxGlobals {
     var tmp2dCanvas: dynamic = null
 }
 
+var wxPage: dynamic = null
 
 internal fun weChatMain() {
     //region document
@@ -201,6 +202,10 @@ internal fun weChatMain() {
     //endregion
 
     globalThis.AudioContext = js("wx").createWebAudioContext().jsConstructor // TODO: untested
+
+    js("wx").onAfterPageLoad { res ->
+        wxPage = res.page
+    }
 
     js("Page")(jsObj page@{
         onLoad = {
