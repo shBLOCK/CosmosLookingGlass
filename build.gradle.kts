@@ -1,6 +1,7 @@
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
 import org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalDistributionDsl
+import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsPlugin.Companion.kotlinNodeJsEnvSpec
 import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
@@ -77,7 +78,7 @@ kotlin {
 
         val jsMain by getting {
             dependencies {
-                implementation(devNpm("uglify-js", "3.19.3"))
+                implementation(devNpm("terser", "5.39.0"))
             }
         }
     }
@@ -165,30 +166,30 @@ dependencies {
     closureCompiler("com.google.javascript:closure-compiler:v20250402")
 }
 
-val jsWeChatMinify by tasks.registering(JavaExec::class) {
+val jsWeChatMinify by tasks.registering(Exec::class) {
     group = "wechat"
 
     val srcRoot = "${rootDir}/wechat/miniprogram/index/src"
-    classpath = closureCompiler
-    mainClass = "com.google.javascript.jscomp.CommandLineRunner"
+
+    executable = kotlinNodeJsEnvSpec.executable.get()
     args(
-//        "--compilation_level", "SIMPLE",
-        "--compilation_level", "ADVANCED",
-        "--env", "CUSTOM",
-        "--language_in", "ECMASCRIPT_2015",
-        "--language_out", "ECMASCRIPT_2015",
-        "--jscomp_off", "uselessCode",
-        "--jscomp_off", "const",
-        "--jscomp_off", "suspiciousCode",
-        "--jscomp_off", "undefinedVars",
-        "--js", "${srcRoot}/index.js",
-        "--js_output_file", "${srcRoot}/index.min.js"
+        "${rootDir}/build/js/node_modules/terser/bin/terser",
+        "--source-map", "\"url='${srcRoot}/index.min.js.map'\"",
+        "--ecma", "2015",
+        "--compress", "--mangle",
+        "--timings",
+        "--output", "${srcRoot}/index.min.js", "${srcRoot}/index.js"
     )
 
     doLast {
         Files.move(
             file("${srcRoot}/index.min.js").toPath(),
             file("${srcRoot}/index.js").toPath(),
+            StandardCopyOption.REPLACE_EXISTING
+        )
+        Files.move(
+            file("${srcRoot}/index.min.js.map").toPath(),
+            file("${srcRoot}/index.js.map").toPath(),
             StandardCopyOption.REPLACE_EXISTING
         )
     }
