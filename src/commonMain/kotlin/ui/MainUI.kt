@@ -1,17 +1,40 @@
 package ui
 
 import de.fabmax.kool.KoolContext
+import de.fabmax.kool.math.PI_F
+import de.fabmax.kool.modules.ksl.KslUnlitShader
+import de.fabmax.kool.modules.ksl.blocks.TexCoordAttributeBlock
+import de.fabmax.kool.modules.ksl.blocks.texCoordAttributeBlock
+import de.fabmax.kool.modules.ksl.lang.a
+import de.fabmax.kool.modules.ksl.lang.div
+import de.fabmax.kool.modules.ksl.lang.getFloat4Port
+import de.fabmax.kool.modules.ksl.lang.minus
+import de.fabmax.kool.modules.ksl.lang.plus
+import de.fabmax.kool.modules.ksl.lang.times
+import de.fabmax.kool.modules.ksl.lang.x
+import de.fabmax.kool.modules.ksl.lang.y
 import de.fabmax.kool.modules.ui2.AlignmentX
 import de.fabmax.kool.modules.ui2.AlignmentY
+import de.fabmax.kool.modules.ui2.Column
+import de.fabmax.kool.modules.ui2.Grow
 import de.fabmax.kool.modules.ui2.RectBackground
 import de.fabmax.kool.modules.ui2.Sizes
+import de.fabmax.kool.modules.ui2.Text
 import de.fabmax.kool.modules.ui2.UiNode
 import de.fabmax.kool.modules.ui2.UiScene
 import de.fabmax.kool.modules.ui2.UiSurface
-import de.fabmax.kool.modules.ui2.align
+import de.fabmax.kool.modules.ui2.alignX
+import de.fabmax.kool.modules.ui2.alignY
 import de.fabmax.kool.modules.ui2.background
 import de.fabmax.kool.modules.ui2.layout
+import de.fabmax.kool.modules.ui2.mutableStateOf
 import de.fabmax.kool.modules.ui2.size
+import de.fabmax.kool.modules.ui2.width
+import de.fabmax.kool.pipeline.Attribute
+import de.fabmax.kool.pipeline.CullMethod
+import de.fabmax.kool.scene.Mesh
+import de.fabmax.kool.scene.geometry.IndexedVertexList
+import de.fabmax.kool.scene.geometry.Usage
 import de.fabmax.kool.util.BaseReleasable
 import de.fabmax.kool.util.Color
 import de.fabmax.kool.util.MdColor
@@ -21,14 +44,23 @@ import universe.CelestialBody
 import universe.SolarSystemScene
 import utils.FwdInvFunction
 import utils.IntFract
+import utils.j2000
 import utils.max
+import utils.`{`
+import utils.`}`
 import kotlin.math.abs
 import kotlin.math.log10
 import kotlin.math.pow
 import kotlin.math.withSign
 
 class MainUI(private val solarSystem: SolarSystemScene) : BaseReleasable() {
-    private var time by solarSystem::time
+    private var time
+        get() = solarSystem.time
+        set(value) {
+            solarSystem.time = value
+            utcTimeState.set(value.j2000.utc)
+        }
+    private val utcTimeState = mutableStateOf(time.j2000.utc)
 
     val cameraControl = MainCameraControl(solarSystem.mainRenderPass.defaultView)
         .apply { solarSystem.onUpdate { update() } }
@@ -88,6 +120,18 @@ class MainUI(private val solarSystem: SolarSystemScene) : BaseReleasable() {
     val hudUiSurface = UiSurface(name = "HudUiSurface").apply {
         content = {
             surface.sizes = getSizes()
+
+            Column {
+                modifier
+                    .alignY(AlignmentY.Bottom)
+                    .width(Grow.Std)
+
+                val timeText = utcTimeState.use().feasibleInstant?.toString()
+                    ?: "UTC+${utcTimeState.value.value}"
+                Text(timeText) {
+                    modifier
+                        .alignX(AlignmentX.Center)
+                }
 
                 timeControl = uiNode.createChild("TimeControl", TimeControl::class, ::TimeControl).apply {
                     setup()
@@ -153,26 +197,111 @@ class MainUI(private val solarSystem: SolarSystemScene) : BaseReleasable() {
                 DAY, 3 * DAY, 10 * DAY,
                 MONTH, 6 * MONTH,
                 YEAR, 3 * YEAR,
-                DECADE,
+                DECADE, 5 * DECADE,
                 CENTURY
             ).let { it.map { -it }.reversed() + it }
+        }
+
+        private val railAnimation = object : Mesh(
+            IndexedVertexList(Attribute.POSITIONS, Attribute.TEXTURE_COORDS),
+            name = "RailAnimationMesh"
+        ) {
+            init {
+                shader = KslUnlitShader {
+                    pipeline {
+                        cullMethod = CullMethod.NO_CULLING
+                    }
+                    color { uniformColor(uniformName = "uBaseColor") }
+
+                    modelCustomizer = {
+                        val texCoordBlock: TexCoordAttributeBlock
+                        vertexStage {
+                            main {
+                                texCoordBlock = texCoordAttributeBlock()
+                            }
+                        }
+                        fragmentStage {
+                            main {
+                                val uOffset = uniformFloat1("uOffset")
+                                val colorPort = getFloat4Port("baseColor")
+                                val color = float4Var(colorPort.input.input)
+                                val uEnd = uniformFloat1("uEnd")
+                                val uv = texCoordBlock.getTextureCoords()
+
+                                val d = float1Var(uv.x, "d")
+
+                                // arrows
+                                d += abs(0.5F.const - uv.y) * 1F.const
+                                `if`(fract(d / 2F.const - uOffset) `{` 0.5F.const) {
+                                    color.a set 0F.const
+                                }
+
+                                // fade in
+                                color.a *= min(uv.x / 8F.const, 1F.const)
+
+                                `if`(distance(uv, float2Value(uEnd, 0.5F.const)) `{` 0.5F.const) {
+                                    color.a set sin(fract(uEnd / 2F.const - uOffset) * (PI_F * 2F).const) * 0.3F.const + 0.7F.const
+                                }.`else` {
+                                    `if`(uv.x `}` uEnd) { color.a set 0F.const }
+                                }
+
+                                colorPort.input(color)
+                            }
+                        }
+                    }
+                }
+            }
+
+            private var uBaseColor by shader!!.uniformColor("uBaseColor", Color.RED)
+            private var uOffset by shader!!.uniform1f("uOffset")
+            private var uEnd by shader!!.uniform1f("uEnd")
+
+            private var offset = 0.0
+
+            init {
+                geometry.usage = Usage.DYNAMIC
+                onUpdate {
+                    val railY = slotInsertionToPx(0.0).toFloat()
+                    val posCenterPx = posToPx(0.0).toFloat()
+
+                    generate {
+                        withTransform {
+                            translate(leftPx, topPx, 0f)
+                            rect {
+                                isCenteredOrigin = false
+                                origin.x = posCenterPx
+                                origin.y = railY - lineWidth.px / 2F
+                                size.x = (posToPx(pos.value) - posCenterPx).toFloat()
+                                size.y = lineWidth.px
+
+                                generateTexCoords(1F)
+                                var texCoordX = abs(size.x) / size.y
+
+                                uEnd = texCoordX
+
+                                // add an extra tail so that the shader can render some interesting effect at the end
+                                // (instead of cutting off suddenly)
+                                size.x += size.y.withSign(size.x)
+                                texCoordX += 1F
+
+                                texCoordUpperRight.x = texCoordX
+                                texCoordLowerRight.x = texCoordX
+                            }
+                        }
+                    }
+
+                    uBaseColor = if (pos.value >= 0.0) MdColor.LIGHT_GREEN else MdColor.RED tone 450
+                    offset += abs(pos.value) * Time.deltaT
+                    uOffset = offset.rem(1.0).toFloat()
+                }
+            }
         }
 
         override fun render(ctx: KoolContext) {
             super.render(ctx)
 
-            val railY = slotInsertionToPx(0.0).toFloat()
-            val posCenterPx = posToPx(0.0).toFloat()
-            getPlainBuilder(0).configured {
-                rect {
-                    isCenteredOrigin = false
-                    origin.x = posCenterPx
-                    origin.y = railY - lineWidth.px / 2F
-                    size.x = (posToPx(pos.value) - posCenterPx).toFloat()
-                    size.y = lineWidth.px
-                    color = Color.GREEN
-                }
-            }
+            surface.getMeshLayer(modifier.zLayer + 0)
+                .addCustomLayer("RailAnimation") { railAnimation }
         }
     }
 }
