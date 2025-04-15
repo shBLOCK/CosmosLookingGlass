@@ -33,7 +33,8 @@ import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.sin
 
-open class SlottedReboundSliderNode(parent: UiNode?, surface: UiSurface) : UiNode(parent, surface), Draggable, Hoverable {
+open class SlottedReboundSliderNode(parent: UiNode?, surface: UiSurface) :
+    UiNode(parent, surface), Draggable, Hoverable {
     override val modifier = UiModifier(surface)
 
     fun setup() {
@@ -101,7 +102,7 @@ open class SlottedReboundSliderNode(parent: UiNode?, surface: UiSurface) : UiNod
 
         var remaining = Time.deltaT.toDouble()
         while (!remaining.isFuzzyZero()) {
-            val dt = min(remaining, 0.05)
+            val dt = min(remaining, 1.0 / 50.0)
             remaining -= dt
 
             val target = MutableVec2d()
