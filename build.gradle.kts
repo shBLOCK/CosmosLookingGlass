@@ -2,7 +2,6 @@ import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
 import org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalDistributionDsl
 import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsPlugin.Companion.kotlinNodeJsEnvSpec
-import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 
@@ -29,8 +28,6 @@ kotlin {
             }
             commonWebpackConfig {
                 outputFileName = "index.js"
-                //mode = KotlinWebpackConfig.Mode.PRODUCTION
-                mode = KotlinWebpackConfig.Mode.DEVELOPMENT
             }
             testTask {
                 enabled = false
