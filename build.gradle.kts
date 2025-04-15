@@ -1,5 +1,6 @@
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
+import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet
 import org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalDistributionDsl
 import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsPlugin.Companion.kotlinNodeJsEnvSpec
 import java.nio.file.Files
@@ -45,6 +46,7 @@ kotlin {
         // only a specific platform
         val targetPlatforms = listOf("natives-windows", "natives-linux", "natives-macos", "natives-macos-arm64")
 
+        @Suppress("unused")
         val commonMain by getting {
             dependencies {
                 // add additional kotlin multi-platform dependencies here...
@@ -58,6 +60,7 @@ kotlin {
             }
         }
 
+        @Suppress("unused")
         val jvmMain by getting {
             dependencies {
                 // add additional jvm-specific dependencies here...
@@ -73,6 +76,7 @@ kotlin {
             }
         }
 
+        @Suppress("unused")
         val jsMain by getting {
             dependencies {
                 implementation(devNpm("terser", "5.39.0"))
@@ -128,17 +132,28 @@ val build by tasks.getting(Task::class) {
     dependsOn("runnableJar")
 }
 
+operator fun File.div(relative: String) = resolve(relative)
+
+val KotlinSourceSet.resourcesDir
+    get() = resources.srcDirs.also { check(it.size == 1) }.first()!!
+
+val cleanMergedAndDeployedResources by tasks.registering {
+    doLast {
+        delete("${rootDir}/assets/all")
+        delete(kotlin.sourceSets["jvmMain"].resourcesDir / "assets")
+        delete(kotlin.sourceSets["jsMain"].resourcesDir / "assets")
+    }
+}
+
 @Suppress("unused")
 val clean by tasks.getting(Task::class) {
+    dependsOn(cleanMergedAndDeployedResources)
+
     doLast {
         delete("${rootDir}/dist")
         delete(fileTree("${rootDir}/wechat/miniprogram/index/src") {
             exclude("README.md")
         })
-
-        delete("${rootDir}/assets/all")
-        delete("${rootDir}/src/jvmMain/resources/assets")
-        delete("${rootDir}/src/jsMain/resources/assets")
     }
 }
 
@@ -242,11 +257,9 @@ val generateAssets by tasks.registering {
 
 val deployAssets by tasks.registering {
     group = "assets"
-    doFirst {
-        delete("${rootDir}/assets/all")
-        delete("${rootDir}/src/commonMain/resources")
-        delete("${rootDir}/src/jsMain/assets")
-    }
+
+    dependsOn(cleanMergedAndDeployedResources)
+    mustRunAfter(cleanMergedAndDeployedResources)
 
     // merge
     doLast {
@@ -264,11 +277,11 @@ val deployAssets by tasks.registering {
     doLast {
         copy {
             from("${assetsRoot}/all/")
-            into("${rootDir}/src/jvmMain/resources/assets/")
+            into(kotlin.sourceSets["jvmMain"].resourcesDir / "assets")
         }
         copy {
             from("${assetsRoot}/all/")
-            into("${rootDir}/src/jsMain/resources/assets/")
+            into(kotlin.sourceSets["jsMain"].resourcesDir / "assets")
         }
     }
 }
