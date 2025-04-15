@@ -22,7 +22,7 @@ import kotlin.math.sqrt
  * lp: longitude of perihelion
  * lan: longitude of the ascending node
  *
- * Uses the [ICRF](https://en.wikipedia.org/wiki/International_Celestial_Reference_System_and_its_realizations) reference frame.
+ * The output is in the J2000 ecliptic plane reference frame, with the x-axis aligned toward the equinox.
  */
 @Suppress("LocalVariableName", "PrivatePropertyName")
 class KeplerModel(
@@ -97,8 +97,7 @@ class KeplerModel(
         val zEcl = (sin_ap * sin_I) * hx +
             (cos_ap * sin_I) * hy
 
-        tmpVec2d.set(yEcl, zEcl).rotate(23.43928.deg)
-        return result.set(xEcl, tmpVec2d.x, tmpVec2d.y).also { lastResult.set(it) }
+        return result.set(xEcl, yEcl, zEcl).also { lastResult.set(it) }
     }
 
     companion object {

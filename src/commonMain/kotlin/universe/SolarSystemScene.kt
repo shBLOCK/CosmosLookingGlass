@@ -1,10 +1,13 @@
 package universe
 
+import de.fabmax.kool.math.Vec3d
+import de.fabmax.kool.math.deg
 import de.fabmax.kool.pipeline.RenderPass
 import utils.IntFract
 import de.fabmax.kool.scene.Scene
 import dynamics.SolarSystemDynModel
 import dynamics.SolarSystemKeplerModel3000BC3000AD
+import dynamics.transformed
 
 class SolarSystemScene : Scene() {
     init {
@@ -13,7 +16,12 @@ class SolarSystemScene : Scene() {
 
     var time = IntFract(0)
 
-    var dynModel: SolarSystemDynModel = SolarSystemKeplerModel3000BC3000AD() //TODO: selectable model
+    //TODO: selectable model
+    var dynModel: SolarSystemDynModel = SolarSystemKeplerModel3000BC3000AD()
+        .transformed { position, orientation -> // to ICRF
+            position.rotate(23.43928.deg, Vec3d.X_AXIS)
+            orientation.rotate(23.43928.deg, Vec3d.X_AXIS)
+        }
 
     val sun = Sun().also { it.dynModelProvider = dynModel::sun }.also(this::addNode)
     val mercury = Mercury().also { it.dynModelProvider = dynModel::mercury }.also(this::addNode)
@@ -26,18 +34,19 @@ class SolarSystemScene : Scene() {
     val uranus = Uranus().also { it.dynModelProvider = dynModel::uranus }.also(this::addNode)
     val neptune = Neptune().also { it.dynModelProvider = dynModel::neptune }.also(this::addNode)
 
-    val celestialBodies get() = iterator {
-        yield(sun)
-        yield(mercury)
-        yield(venus)
-        yield(earth)
-        yield(moon)
-        yield(mars)
-        yield(jupiter)
-        yield(saturn)
-        yield(uranus)
-        yield(neptune)
-    }
+    val celestialBodies
+        get() = iterator {
+            yield(sun)
+            yield(mercury)
+            yield(venus)
+            yield(earth)
+            yield(moon)
+            yield(mars)
+            yield(jupiter)
+            yield(saturn)
+            yield(uranus)
+            yield(neptune)
+        }
 
     override fun update(updateEvent: RenderPass.UpdateEvent) {
         dynModel.seek(time)

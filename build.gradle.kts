@@ -20,6 +20,10 @@ kotlin {
     jvm { }
     jvmToolchain(21)
 
+    compilerOptions {
+        freeCompilerArgs.add("-Xnested-type-aliases")
+    }
+
     js {
         binaries.executable()
         browser {

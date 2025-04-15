@@ -8,7 +8,7 @@ import utils.IntFract
 import de.fabmax.kool.math.QuatD
 import de.fabmax.kool.math.Vec3d
 
-interface DynModel {
+sealed interface DynModel {
     val time: IntFract
 
     fun seek(time: IntFract)

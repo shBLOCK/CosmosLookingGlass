@@ -1,7 +1,13 @@
 # SolarUtils
 ### W.I.P
 
-# Developer Note
+# Developer Notes
+
+### Celestial Dynamics Model
+References:  
+https://ssd.jpl.nasa.gov/planets/approx_pos.html
+https://stjarnhimlen.se/comp/ppcomp.html
+https://astropedia.astrogeology.usgs.gov/download/Docs/WGCCRE/WGCCRE2015reprint.pdf
 
 ### Kool Submodule
 To update [Kool](https://github.com/kool-engine/kool) submodule:
