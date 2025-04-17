@@ -17,6 +17,13 @@ open class Universe : AbstractMutableSet<CelestialBody>() {
             this@Universe.update(updateEvent)
             super.update(updateEvent)
         }
+
+        override fun release() {
+            // Release (thus remove) all celestial bodies first to avoid their release listeners triggering remove
+            // during iteration of the children list in super.release() causing ConcurrentModificationException.
+            this@Universe.toList().forEach { it.release() }
+            super.release()
+        }
     }
 
     var name by scene::name
