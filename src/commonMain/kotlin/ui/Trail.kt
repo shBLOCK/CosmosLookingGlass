@@ -3,11 +3,7 @@
 package ui
 
 import de.fabmax.kool.KoolSystem
-import de.fabmax.kool.math.MutableVec2i
-import de.fabmax.kool.math.MutableVec3d
-import de.fabmax.kool.math.MutableVec4f
-import de.fabmax.kool.math.Vec2i
-import de.fabmax.kool.math.Vec4f
+import de.fabmax.kool.math.*
 import de.fabmax.kool.math.spatial.BoundingBoxF
 import de.fabmax.kool.modules.ksl.KslShader
 import de.fabmax.kool.modules.ksl.blocks.cameraData

@@ -1,10 +1,10 @@
 package universe
 
 import de.fabmax.kool.pipeline.RenderPass
-import utils.IntFract
 import de.fabmax.kool.scene.Scene
 import de.fabmax.kool.util.Releasable
 import dynamics.UniverseDynModel
+import utils.IntFract
 import utils.ReleasableImpl
 
 open class Universe : AbstractMutableSet<CelestialBody>() {

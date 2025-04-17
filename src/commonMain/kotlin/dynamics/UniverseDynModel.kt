@@ -15,7 +15,7 @@ abstract class UniverseDynModelImpl : UniverseDynModel() {
     open fun getDynModelFor(celestialBody: CelestialBody): CelestialDynModel? = null
 
     final override fun addDynModelFor(celestialBody: CelestialBody): Boolean {
-        check(celestialBody !in activeModels) {"Already added: $celestialBody"}
+        check(celestialBody !in activeModels) { "Already added: $celestialBody" }
         val model = getDynModelFor(celestialBody) ?: return false
         celestialBody.dynModel = model
         activeModels[celestialBody] = model

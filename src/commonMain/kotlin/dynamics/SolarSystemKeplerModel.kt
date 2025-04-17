@@ -1,4 +1,5 @@
 @file:Suppress("WrapUnaryOperator", "GrazieInspection")
+
 package dynamics
 
 import de.fabmax.kool.math.Vec3d
@@ -9,23 +10,25 @@ import utils.SPEED_OF_LIGHT
 import utils.au
 
 abstract class SolarSystemKeplerModelBase : SolarSystemOrientatedModel() {
-//    override val sunPos = DynModel.Position.Static(Vec3d.ZERO)
-    override val sunPos by lazy { BarycenterPositionModel(
-        listOf(
-            mercuryPos to SolarSystemConsts.MERCURY_MASS,
-            venusPos to SolarSystemConsts.VENUS_MASS,
-            earthPos to SolarSystemConsts.EARTH_MASS,
-            moonPos to SolarSystemConsts.MOON_MASS,
-            marsPos to SolarSystemConsts.MARS_MASS,
-            jupiterPos to SolarSystemConsts.JUPITER_MASS,
-            saturnPos to SolarSystemConsts.SATURN_MASS,
-            uranusPos to SolarSystemConsts.URANUS_MASS,
-            neptunePos to SolarSystemConsts.NEPTUNE_MASS
-        ).filter { (model, objMass) -> objMass > 1e24 }, // ignore small mass objects
-        mass = SolarSystemConsts.SUN_MASS,
-        barycenter = Vec3d.ZERO,
-        gravityPropagationSpeed = SPEED_OF_LIGHT
-    ) }
+    //    override val sunPos = DynModel.Position.Static(Vec3d.ZERO)
+    override val sunPos by lazy {
+        BarycenterPositionModel(
+            listOf(
+                mercuryPos to SolarSystemConsts.MERCURY_MASS,
+                venusPos to SolarSystemConsts.VENUS_MASS,
+                earthPos to SolarSystemConsts.EARTH_MASS,
+                moonPos to SolarSystemConsts.MOON_MASS,
+                marsPos to SolarSystemConsts.MARS_MASS,
+                jupiterPos to SolarSystemConsts.JUPITER_MASS,
+                saturnPos to SolarSystemConsts.SATURN_MASS,
+                uranusPos to SolarSystemConsts.URANUS_MASS,
+                neptunePos to SolarSystemConsts.NEPTUNE_MASS
+            ).filter { (model, objMass) -> objMass > 1e24 }, // ignore small mass objects
+            mass = SolarSystemConsts.SUN_MASS,
+            barycenter = Vec3d.ZERO,
+            gravityPropagationSpeed = SPEED_OF_LIGHT
+        )
+    }
 }
 
 private const val BC3000 = (-50L * IntFractTime.J2000.CENTURY).toLong()
@@ -54,7 +57,8 @@ class SolarSystemKeplerModel3000BC3000AD : SolarSystemKeplerModelBase() {
     //@formatter:on
 
     override val earthPos = emBaryPos // TODO
-//    override val moonPos: DynModel.Position<*> = object : DynModelBase<>(), DynModel.Position<*> { // TODO
+
+    //    override val moonPos: DynModel.Position<*> = object : DynModelBase<>(), DynModel.Position<*> { // TODO
 //        override fun position() = earthPos.position() + Vec3d(384400e3, 0.0, 0.0)
 //    }
     override val moonPos = emBaryPos

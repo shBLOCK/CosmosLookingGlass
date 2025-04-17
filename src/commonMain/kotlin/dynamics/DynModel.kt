@@ -4,9 +4,9 @@ package dynamics
 
 import de.fabmax.kool.math.MutableQuatD
 import de.fabmax.kool.math.MutableVec3d
-import utils.IntFract
 import de.fabmax.kool.math.QuatD
 import de.fabmax.kool.math.Vec3d
+import utils.IntFract
 
 interface DynModel {
     val time: IntFract
@@ -49,4 +49,4 @@ abstract class DynModelBase : DynModel {
     }
 }
 
-inline fun <reified T: DynModel> T.copyTyped() = copy() as T
+inline fun <reified T : DynModel> T.copyTyped() = copy() as T

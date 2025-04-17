@@ -2,16 +2,7 @@
 
 package utils
 
-import de.fabmax.kool.math.AngleD
-import de.fabmax.kool.math.MutableQuatD
-import de.fabmax.kool.math.MutableVec3d
-import de.fabmax.kool.math.QuatD
-import de.fabmax.kool.math.RayD
-import de.fabmax.kool.math.Vec2d
-import de.fabmax.kool.math.Vec3d
-import de.fabmax.kool.math.clamp
-import de.fabmax.kool.math.expDecay
-import de.fabmax.kool.math.isFuzzyEqual
+import de.fabmax.kool.math.*
 import de.fabmax.kool.util.Time
 import kotlin.math.acos
 import kotlin.math.atan2

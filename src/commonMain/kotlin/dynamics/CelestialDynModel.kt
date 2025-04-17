@@ -31,7 +31,8 @@ interface CelestialDynModel : DynModel.Position, DynModel.Orientation {
         override fun copy() = this
     }
 
-    class Blending(val a: CelestialDynModel, val b: CelestialDynModel, var t: Double = 0.0) : DynModelBase(), CelestialDynModel {
+    class Blending(val a: CelestialDynModel, val b: CelestialDynModel, var t: Double = 0.0) :
+        DynModelBase(), CelestialDynModel {
         override fun seek(time: IntFract) {
             a.seek(time)
             b.seek(time)

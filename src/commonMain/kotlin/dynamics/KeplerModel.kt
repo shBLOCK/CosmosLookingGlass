@@ -2,15 +2,10 @@ package dynamics
 
 import de.fabmax.kool.math.MutableVec2d
 import de.fabmax.kool.math.MutableVec3d
-import de.fabmax.kool.math.deg
 import de.fabmax.kool.math.wrap
 import utils.IntFract
 import utils.j2000
-import kotlin.math.PI
-import kotlin.math.abs
-import kotlin.math.cos
-import kotlin.math.sin
-import kotlin.math.sqrt
+import kotlin.math.*
 
 /**
  * An approximating dynamics model using Keplerian formulae. See [this NASA JPL Document](https://ssd.jpl.nasa.gov/planets/approx_pos.html).

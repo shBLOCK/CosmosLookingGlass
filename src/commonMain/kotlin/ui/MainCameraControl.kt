@@ -6,7 +6,6 @@ import de.fabmax.kool.input.Pointer
 import de.fabmax.kool.input.PointerState
 import de.fabmax.kool.math.*
 import de.fabmax.kool.pipeline.RenderPass
-import de.fabmax.kool.scene.Node
 import de.fabmax.kool.scene.OrthographicCamera
 import de.fabmax.kool.scene.PerspectiveCamera
 import de.fabmax.kool.util.BaseReleasable

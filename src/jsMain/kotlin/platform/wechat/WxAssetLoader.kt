@@ -1,17 +1,20 @@
 package platform.wechat
 
-import de.fabmax.kool.*
+import de.fabmax.kool.AssetLoader
+import de.fabmax.kool.AssetRef
+import de.fabmax.kool.LoadedAsset
+import de.fabmax.kool.MimeType
 import de.fabmax.kool.math.Vec2i
 import de.fabmax.kool.platform.ImageTextureData
 import de.fabmax.kool.util.Uint8BufferImpl
-import platform.jsObj
-import platform.wxPage
 import kotlinx.coroutines.CompletableDeferred
 import org.khronos.webgl.ArrayBuffer
 import org.khronos.webgl.Uint8Array
 import org.w3c.dom.HTMLImageElement
 import org.w3c.dom.ImageBitmap
 import org.w3c.dom.ImageData
+import platform.jsObj
+import platform.wxPage
 
 class WxAssetLoader(val basePath: String) : AssetLoader() {
     override suspend fun loadBlob(ref: AssetRef.Blob): LoadedAsset.Blob {

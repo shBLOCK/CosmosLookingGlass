@@ -1,37 +1,12 @@
 package ui
 
 import de.fabmax.kool.KoolContext
-import de.fabmax.kool.math.MutableVec2d
-import de.fabmax.kool.math.Vec2d
-import de.fabmax.kool.math.Vec4f
-import de.fabmax.kool.math.clamp
-import de.fabmax.kool.math.isFuzzyZero
-import de.fabmax.kool.math.toVec2d
-import de.fabmax.kool.math.toVec2f
-import de.fabmax.kool.modules.ui2.AnimatedFloatBidir
-import de.fabmax.kool.modules.ui2.Draggable
-import de.fabmax.kool.modules.ui2.Hoverable
-import de.fabmax.kool.modules.ui2.PointerEvent
-import de.fabmax.kool.modules.ui2.UiModifier
-import de.fabmax.kool.modules.ui2.UiNode
-import de.fabmax.kool.modules.ui2.UiSurface
-import de.fabmax.kool.modules.ui2.dragListener
-import de.fabmax.kool.modules.ui2.hoverListener
-import de.fabmax.kool.modules.ui2.mutableStateOf
-import de.fabmax.kool.modules.ui2.padding
+import de.fabmax.kool.math.*
+import de.fabmax.kool.modules.ui2.*
 import de.fabmax.kool.util.Color
 import de.fabmax.kool.util.Time
-import utils.FwdInvFunction
-import utils.NaN
-import utils.expDecaySnapping
-import utils.mix
-import utils.width
-import kotlin.math.PI
-import kotlin.math.abs
-import kotlin.math.cos
-import kotlin.math.min
-import kotlin.math.pow
-import kotlin.math.sin
+import utils.*
+import kotlin.math.*
 
 open class SlottedReboundSliderNode(parent: UiNode?, surface: UiSurface) :
     UiNode(parent, surface), Draggable, Hoverable {

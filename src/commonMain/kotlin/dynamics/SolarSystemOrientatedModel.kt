@@ -2,16 +2,7 @@ package dynamics
 
 import de.fabmax.kool.math.QuatD
 import universe.CelestialBody
-import universe.content.Earth
-import universe.content.Jupiter
-import universe.content.Mars
-import universe.content.Mercury
-import universe.content.Moon
-import universe.content.Neptune
-import universe.content.Saturn
-import universe.content.Sun
-import universe.content.Uranus
-import universe.content.Venus
+import universe.content.*
 
 abstract class SolarSystemOrientatedModel : UniverseDynModelImpl() {
     protected abstract val sunPos: DynModel.Position
