@@ -147,20 +147,13 @@ class Trail(val celestialBody: CelestialBody) : BaseReleasable() {
         }
 
         fun update() {
-//            texture.uploadLazy(
-//                BufferedImageData2d(
-//                    buffer, texSize.x, texSize.y, TexFormat.RGBA_F32,
-//                    id = "$baseName upload buffer (resize)"
-//                )
-//            )
-
             if (headStep <= startStep && tailStep >= endStep) return
 
             // use 2x batchSize so we can batch in both directions
             val minSize = (endStep - startStep + 1).toInt() + (batchSize * 2)
             if (size < minSize) expand(minSize)
 
-            val dyn = celestialBody.dynModel.copyTyped()
+            val dyn = celestialBody.dynModel?.copyTyped() ?: CelestialDynModel.Dummy()
             if (endStep > tailStep) {
                 tailStep = (endStep + (batchSize - 1)).also {
                     dyn.generate(max(tailStep + 1, startStep)..it)
@@ -280,10 +273,10 @@ class Trail(val celestialBody: CelestialBody) : BaseReleasable() {
 
             if (originMoveWithRef) {
                 if (useRef) {
-                    val refCurrentPos = ref!!.celestialBody.dynModel.copyTyped().run {
+                    val refCurrentPos = ref!!.celestialBody.dynModel?.copyTyped()?.run {
                         seek(currentTime)
                         position()
-                    }
+                    } ?: MutableVec3d(0.0)
                     alterRef?.celestialBody?.dynModel?.copyTyped()?.apply {
                         seek(currentTime)
                         refCurrentPos.mix(position(), refMix, result = refCurrentPos)

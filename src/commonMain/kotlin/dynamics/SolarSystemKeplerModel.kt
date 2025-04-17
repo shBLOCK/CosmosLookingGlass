@@ -1,9 +1,9 @@
-@file:Suppress("WrapUnaryOperator")
+@file:Suppress("WrapUnaryOperator", "GrazieInspection")
 package dynamics
 
 import de.fabmax.kool.math.Vec3d
 import de.fabmax.kool.math.deg
-import universe.SolarSystemConsts
+import universe.content.SolarSystemConsts
 import utils.IntFractTime
 import utils.SPEED_OF_LIGHT
 import utils.au

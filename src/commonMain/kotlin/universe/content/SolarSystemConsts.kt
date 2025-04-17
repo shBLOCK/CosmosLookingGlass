@@ -1,4 +1,4 @@
-package universe
+package universe.content
 
 import de.fabmax.kool.util.Color
 
@@ -8,8 +8,6 @@ import de.fabmax.kool.util.Color
  * Theme Color: [https://imgur.com/a/OCCq2gl](https://imgur.com/a/OCCq2gl)
  */
 object SolarSystemConsts {
-    //TODO: use wikipedia sources data (replace 1638237449047_solar-system-datatable.pdf datas)
-
     const val SUN_RADIUS = 695700e3 // https://en.wikipedia.org/wiki/Sun
     const val SUN_FLATTENING = 0.00005
     const val SUN_MASS = 1988400e24

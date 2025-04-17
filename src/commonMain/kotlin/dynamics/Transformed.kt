@@ -2,9 +2,10 @@ package dynamics
 
 import de.fabmax.kool.math.MutableQuatD
 import de.fabmax.kool.math.MutableVec3d
+import universe.CelestialBody
 import utils.IntFract
 
-class TransformedCelestialDynModel(
+class TransformedDynModel(
     private val transform: Transform,
     private val delegate: CelestialDynModel
 ) : CelestialDynModel by delegate {
@@ -30,31 +31,28 @@ class TransformedCelestialDynModel(
     override fun position(result: MutableVec3d) = update().let { result.set(_position) }
     override fun orientation(result: MutableQuatD) = update().let { result.set(_orientation) }
 
-    override fun copy() = TransformedCelestialDynModel(transform, delegate.copyTyped())
+    override fun copy() = TransformedDynModel(transform, delegate.copyTyped())
 
     typealias Transform = (position: MutableVec3d, orientation: MutableQuatD) -> Unit
 }
 
-fun CelestialDynModel.transformed(transform: TransformedCelestialDynModel.Transform) =
-    TransformedCelestialDynModel(transform, this)
+fun CelestialDynModel.transformed(transform: TransformedDynModel.Transform) =
+    TransformedDynModel(transform, this)
 
-class SolarSystemTransformedDynModel(
-    private val transform: TransformedCelestialDynModel.Transform,
-    private val delegate: SolarSystemDynModel
-) : SolarSystemDynModel() {
-    override val sun = TransformedCelestialDynModel(transform, delegate.sun)
-    override val mercury = TransformedCelestialDynModel(transform, delegate.mercury)
-    override val venus = TransformedCelestialDynModel(transform, delegate.venus)
-    override val earth = TransformedCelestialDynModel(transform, delegate.earth)
-    override val moon = TransformedCelestialDynModel(transform, delegate.moon)
-    override val mars = TransformedCelestialDynModel(transform, delegate.mars)
-    override val jupiter = TransformedCelestialDynModel(transform, delegate.jupiter)
-    override val saturn = TransformedCelestialDynModel(transform, delegate.saturn)
-    override val uranus = TransformedCelestialDynModel(transform, delegate.uranus)
-    override val neptune = TransformedCelestialDynModel(transform, delegate.neptune)
+class TransformedUniverseDynModel(
+    private val transform: TransformedDynModel.Transform,
+    private val delegate: UniverseDynModelImpl
+) : UniverseDynModelImpl() {
+    override fun getDynModelFor(celestialBody: CelestialBody): CelestialDynModel? =
+        delegate.getDynModelFor(celestialBody)?.transformed(transform)
 
-    override fun copy() = SolarSystemTransformedDynModel(transform, delegate)
+    override fun copy() = TransformedUniverseDynModel(transform, delegate.copyTyped())
+
+    override fun seek(time: IntFract) {
+        delegate.seek(time)
+        super.seek(time)
+    }
 }
 
-fun SolarSystemDynModel.transformed(transform: TransformedCelestialDynModel.Transform) =
-    SolarSystemTransformedDynModel(transform, this)
+fun UniverseDynModelImpl.transformed(transform: TransformedDynModel.Transform) =
+    TransformedUniverseDynModel(transform, this)

@@ -1,3 +1,5 @@
+@file:Suppress("NOTHING_TO_INLINE")
+
 package dynamics
 
 import de.fabmax.kool.math.MutableQuatD
@@ -24,7 +26,7 @@ interface CelestialDynModel : DynModel.Position, DynModel.Orientation {
         override fun copy() = Composed(positionModel.copyTyped(), orientationModel.copyTyped())
     }
 
-    class Static(position: Vec3d = Vec3d.ZERO, orientation: QuatD = QuatD.IDENTITY) :
+    sealed class Static(position: Vec3d = Vec3d.ZERO, orientation: QuatD = QuatD.IDENTITY) :
         Composed(DynModel.Position.Static(position), DynModel.Orientation.Static(orientation)) {
         override fun copy() = this
     }
@@ -56,4 +58,6 @@ interface CelestialDynModel : DynModel.Position, DynModel.Orientation {
             return slerpShortest(tmpQuatDa, tmpQuatDb, t, result)
         }
     }
+
+    class Dummy : Static()
 }

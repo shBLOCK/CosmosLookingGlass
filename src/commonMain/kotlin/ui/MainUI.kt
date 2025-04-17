@@ -41,7 +41,9 @@ import de.fabmax.kool.util.MdColor
 import de.fabmax.kool.util.MsdfFont
 import de.fabmax.kool.util.Time
 import universe.CelestialBody
-import universe.SolarSystemScene
+import universe.Universe
+import universe.content.Earth
+import universe.content.Sun
 import utils.FwdInvFunction
 import utils.IntFract
 import utils.j2000
@@ -53,7 +55,7 @@ import kotlin.math.log10
 import kotlin.math.pow
 import kotlin.math.withSign
 
-class MainUI(private val solarSystem: SolarSystemScene) : BaseReleasable() {
+class MainUI(private val solarSystem: Universe) : BaseReleasable() {
     private var time
         get() = solarSystem.time
         set(value) {
@@ -62,26 +64,26 @@ class MainUI(private val solarSystem: SolarSystemScene) : BaseReleasable() {
         }
     private val utcTimeState = mutableStateOf(time.j2000.utc)
 
-    val cameraControl = MainCameraControl(solarSystem.mainRenderPass.defaultView)
-        .apply { solarSystem.onUpdate { update() } }
+    val cameraControl = MainCameraControl(solarSystem.scene.mainRenderPass.defaultView)
+        .apply { solarSystem.scene.onUpdate { update() } }
 
     private lateinit var timeControl: TimeControl
 
     val cbToTrail = mutableMapOf<CelestialBody, Trail>()
 
     private val trailManager = TrailManager().apply {
-        solarSystem.onUpdate { update() }
-        solarSystem.celestialBodies.forEach { body ->
+        solarSystem.scene.onUpdate { update() }
+        solarSystem.forEach { body ->
             trails += Trail(body).also {
-                solarSystem += it.meshInstances[0]
+                solarSystem.scene += it.meshInstances[0]
             }.also { cbToTrail[body] = it }
         }
     }
 
     init {
         trailManager.trails.forEach {
-            it.meshInstances[0].ref = cbToTrail[solarSystem.sun]
-            it.meshInstances[0].alterRef = cbToTrail[solarSystem.earth]
+            it.meshInstances[0].ref = cbToTrail[solarSystem[Sun]!!]
+            it.meshInstances[0].alterRef = cbToTrail[solarSystem[Earth]!!]
         }
     }
 
@@ -167,7 +169,7 @@ class MainUI(private val solarSystem: SolarSystemScene) : BaseReleasable() {
 
     private inner class TimeControl(parent: UiNode?, surface: UiSurface) : SlottedReboundSliderNode(parent, surface) {
         init {
-            solarSystem.onUpdate {
+            solarSystem.scene.onUpdate {
                 time += value.value * Time.deltaT
             }
 

@@ -1,8 +1,19 @@
 package dynamics
 
 import de.fabmax.kool.math.QuatD
+import universe.CelestialBody
+import universe.content.Earth
+import universe.content.Jupiter
+import universe.content.Mars
+import universe.content.Mercury
+import universe.content.Moon
+import universe.content.Neptune
+import universe.content.Saturn
+import universe.content.Sun
+import universe.content.Uranus
+import universe.content.Venus
 
-abstract class SolarSystemOrientatedModel : SolarSystemDynModel() {
+abstract class SolarSystemOrientatedModel : UniverseDynModelImpl() {
     protected abstract val sunPos: DynModel.Position
     protected abstract val mercuryPos: DynModel.Position
     protected abstract val venusPos: DynModel.Position
@@ -16,16 +27,31 @@ abstract class SolarSystemOrientatedModel : SolarSystemDynModel() {
 
     //TODO: actual orientation model
     //@formatter:off
-    override val sun     by lazy { CelestialDynModel.Composed(sunPos,     DynModel.Orientation.Static(QuatD.IDENTITY)) }
-    override val mercury by lazy { CelestialDynModel.Composed(mercuryPos, DynModel.Orientation.Static(QuatD.IDENTITY)) }
-    override val venus   by lazy { CelestialDynModel.Composed(venusPos,   DynModel.Orientation.Static(QuatD.IDENTITY)) }
-    override val earth   by lazy { CelestialDynModel.Composed(earthPos,   DynModel.Orientation.Static(QuatD.IDENTITY)) }
-    override val moon    by lazy { CelestialDynModel.Composed(moonPos,    DynModel.Orientation.Static(QuatD.IDENTITY)) }
-    override val mars    by lazy { CelestialDynModel.Composed(marsPos,    DynModel.Orientation.Static(QuatD.IDENTITY)) }
-    override val jupiter by lazy { CelestialDynModel.Composed(jupiterPos, DynModel.Orientation.Static(QuatD.IDENTITY)) }
-    override val saturn  by lazy { CelestialDynModel.Composed(saturnPos,  DynModel.Orientation.Static(QuatD.IDENTITY)) }
-    override val uranus  by lazy { CelestialDynModel.Composed(uranusPos,  DynModel.Orientation.Static(QuatD.IDENTITY)) }
-    override val neptune by lazy { CelestialDynModel.Composed(neptunePos, DynModel.Orientation.Static(QuatD.IDENTITY)) }
+    private val sun     by lazy { CelestialDynModel.Composed(sunPos,     DynModel.Orientation.Static(QuatD.IDENTITY)) }
+    private val mercury by lazy { CelestialDynModel.Composed(mercuryPos, DynModel.Orientation.Static(QuatD.IDENTITY)) }
+    private val venus   by lazy { CelestialDynModel.Composed(venusPos,   DynModel.Orientation.Static(QuatD.IDENTITY)) }
+    private val earth   by lazy { CelestialDynModel.Composed(earthPos,   DynModel.Orientation.Static(QuatD.IDENTITY)) }
+    private val moon    by lazy { CelestialDynModel.Composed(moonPos,    DynModel.Orientation.Static(QuatD.IDENTITY)) }
+    private val mars    by lazy { CelestialDynModel.Composed(marsPos,    DynModel.Orientation.Static(QuatD.IDENTITY)) }
+    private val jupiter by lazy { CelestialDynModel.Composed(jupiterPos, DynModel.Orientation.Static(QuatD.IDENTITY)) }
+    private val saturn  by lazy { CelestialDynModel.Composed(saturnPos,  DynModel.Orientation.Static(QuatD.IDENTITY)) }
+    private val uranus  by lazy { CelestialDynModel.Composed(uranusPos,  DynModel.Orientation.Static(QuatD.IDENTITY)) }
+    private val neptune by lazy { CelestialDynModel.Composed(neptunePos, DynModel.Orientation.Static(QuatD.IDENTITY)) }
     //@formatter:on
+
+    override fun getDynModelFor(celestialBody: CelestialBody) =
+        when (celestialBody) {
+            is Sun -> sun
+            is Mercury -> mercury
+            is Venus -> venus
+            is Earth -> earth
+            is Moon -> moon
+            is Mars -> mars
+            is Jupiter -> jupiter
+            is Saturn -> saturn
+            is Uranus -> uranus
+            is Neptune -> neptune
+            else -> super.getDynModelFor(celestialBody)
+        }
 }
 

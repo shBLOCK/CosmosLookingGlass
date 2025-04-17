@@ -6,18 +6,18 @@ import de.fabmax.kool.scene.TrsTransformD
 import de.fabmax.kool.util.Color
 import dynamics.CelestialDynModel
 
-abstract class CelestialBody(
-    val themeColor: Color = Color.WHITE
-) : Node() {
+abstract class CelestialBody : Node() {
     init {
         transform = TrsTransformD() // use double precision
     }
 
-    var dynModelProvider: (() -> CelestialDynModel) = { CelestialDynModel.Static() }
-    val dynModel get() = dynModelProvider()
+    open val themeColor: Color = Color.WHITE
+
+    var dynModel: CelestialDynModel? = null
+        internal set
 
     open fun applyDynModel() {
-        transform.setCompositionOf(dynModel.position(), dynModel.orientation())
+        dynModel?.also { transform.setCompositionOf(it.position(), it.orientation()) }
     }
 
     override fun update(updateEvent: RenderPass.UpdateEvent) {
