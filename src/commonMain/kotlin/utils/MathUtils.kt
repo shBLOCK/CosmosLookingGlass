@@ -13,6 +13,9 @@ const val SPEED_OF_LIGHT = 299792458.0
 
 inline val Double.au get() = this * 149_597_870_700.0
 
+/** Earth radii */
+inline val Double.er get() = this * 6.3781366e6
+
 fun Double.expDecaySnapping(target: Double, decay: Double, deltaT: Float = Time.deltaT) =
     if (!isFuzzyEqual(this, target)) expDecay(target, decay, deltaT) else target
 

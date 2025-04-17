@@ -9,7 +9,6 @@ class TransformedDynModel(
     private val transform: Transform,
     private val delegate: CelestialDynModel
 ) : CelestialDynModel by delegate {
-
     private var dirty = true
     override fun seek(time: IntFract) {
         delegate.seek(time)
@@ -23,7 +22,7 @@ class TransformedDynModel(
         if (dirty) {
             delegate.position(_position)
             delegate.orientation(_orientation)
-            transform(_position, _orientation)
+            transform(time, _position, _orientation)
             dirty = false
         }
     }
@@ -33,11 +32,12 @@ class TransformedDynModel(
 
     override fun copy() = TransformedDynModel(transform, delegate.copyTyped())
 
-    typealias Transform = (position: MutableVec3d, orientation: MutableQuatD) -> Unit
+    typealias Transform = (time: IntFract, position: MutableVec3d, orientation: MutableQuatD) -> Unit
 }
 
 fun CelestialDynModel.transformed(transform: TransformedDynModel.Transform) =
     TransformedDynModel(transform, this)
+
 
 class TransformedUniverseDynModel(
     private val transform: TransformedDynModel.Transform,
@@ -56,3 +56,20 @@ class TransformedUniverseDynModel(
 
 fun UniverseDynModelImpl.transformed(transform: TransformedDynModel.Transform) =
     TransformedUniverseDynModel(transform, this)
+
+
+class RelativePositionModel(
+    private val reference: DynModel.Position,
+    private val delegate: DynModel.Position
+) : DynModel.Position by delegate {
+    override fun position(result: MutableVec3d): MutableVec3d {
+        delegate.position(result)
+        reference.seek(time)
+        result += reference.position()
+        return result
+    }
+
+    override fun copy() = RelativePositionModel(reference.copyTyped(), delegate.copyTyped())
+}
+
+fun DynModel.Position.relativeTo(reference: DynModel.Position) = RelativePositionModel(reference, this)

@@ -16,6 +16,7 @@ import de.fabmax.kool.util.*
 import universe.CelestialBody
 import universe.Universe
 import universe.content.Earth
+import universe.content.Moon
 import universe.content.Sun
 import utils.*
 import kotlin.math.abs
@@ -33,7 +34,16 @@ class MainUI(private val solarSystem: Universe) : BaseReleasable() {
     private val utcTimeState = mutableStateOf(time.j2000.utc)
 
     val cameraControl = MainCameraControl(solarSystem.scene.mainRenderPass.defaultView)
-        .apply { solarSystem.scene.onUpdate { update() } }
+        .apply {
+            solarSystem.scene.onUpdate {
+                //TODO: TEMP
+                val center = solarSystem[Earth]!!.dynModel!!.position()
+                targetParams.center.set(center)
+                params.center.set(center)
+
+                update()
+            }
+        }
 
     private lateinit var timeControl: TimeControl
 
@@ -49,10 +59,12 @@ class MainUI(private val solarSystem: Universe) : BaseReleasable() {
     }
 
     init {
+        cbToTrail[solarSystem[Moon]!!]!!.stepSize = 24 * 3600 / 4
         trailManager.trails.forEach {
             it.meshInstances[0].ref = cbToTrail[solarSystem[Sun]!!]
             it.meshInstances[0].alterRef = cbToTrail[solarSystem[Earth]!!]
         }
+        cbToTrail[solarSystem[Moon]!!]!!.meshInstances[0].ref = cbToTrail[solarSystem[Earth]!!]
     }
 
     var test = 0

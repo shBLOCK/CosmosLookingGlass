@@ -8,6 +8,7 @@ import universe.content.SolarSystemConsts
 import utils.IntFractTime
 import utils.SPEED_OF_LIGHT
 import utils.au
+import utils.er
 
 abstract class SolarSystemKeplerModelBase : SolarSystemOrientatedModel() {
     //    override val sunPos = DynModel.Position.Static(Vec3d.ZERO)
@@ -37,6 +38,7 @@ private const val AD3000 = (10L * IntFractTime.J2000.CENTURY).toLong()
 class SolarSystemKeplerModel3000BC3000AD : SolarSystemKeplerModelBase() {
     //@formatter:off
     // Tip: disable IDEA inlay hints for proper formatting
+    // https://ssd.jpl.nasa.gov/planets/approx_pos.html
     //                                         a               e            I                       L                 long. peri            long. node
     override val mercuryPos = KeplerModel( 0.38709843.au,  0.20563661,  7.00559432.deg.rad,    252.25166724.deg.rad,  77.45771895.deg.rad,  48.33961819.deg.rad,
     +                                      0.00000000.au,  0.00002123, -0.00590158.deg.rad, 149472.67486623.deg.rad,   0.15940013.deg.rad,  -0.12214182.deg.rad,                                                             timeMin = BC3000, timeMax = AD3000)
@@ -54,14 +56,43 @@ class SolarSystemKeplerModel3000BC3000AD : SolarSystemKeplerModelBase() {
     +                                     -0.00020455.au, -0.00001550, -0.00180155.deg.rad,    428.49512595.deg.rad,   0.09266985.deg.rad,   0.05739699.deg.rad,  0.00058331, -0.97731848,  0.17689245,  7.67025000.deg.rad, timeMin = BC3000, timeMax = AD3000)
     override val neptunePos = KeplerModel(30.06952752.au,  0.00895439,  1.77005520.deg.rad,    304.22289287.deg.rad,  46.68158724.deg.rad, 131.78635853.deg.rad,
     +                                      0.00006447.au,  0.00000818,  0.00022400.deg.rad,    218.46515314.deg.rad,   0.01009938.deg.rad,  -0.00606302.deg.rad, -0.00041348,  0.68346318, -0.10162547,  7.67025000.deg.rad, timeMin = BC3000, timeMax = AD3000)
+
+    // https://stjarnhimlen.se/comp/ppcomp.html
+    // TODO: perturbation terms (https://stjarnhimlen.se/comp/ppcomp.html#9)
+    private  val _moonPos   = PPCompModel(125.1228      .deg.rad, 5.1454.deg.rad, 318.0634      .deg.rad, 60.2666.er, 0.054900, 115.3654      .deg.rad,
+    +                                      -0.0529538083.deg.rad, 0.0   .deg.rad,   0.1643573223.deg.rad,  0.0   .er, 0.0     ,  13.0649929509.deg.rad)
     //@formatter:on
 
-    override val earthPos = emBaryPos // TODO
+    override val moonPos = _moonPos.relativeTo(emBaryPos)
+    override val earthPos = BarycenterPositionModel(
+        listOf(_moonPos.copyTyped() to SolarSystemConsts.MOON_MASS),
+        mass = SolarSystemConsts.EARTH_MASS,
+        barycenter = Vec3d.ZERO,
+        gravityPropagationSpeed = 0.0
+    ).relativeTo(emBaryPos)
 
     //    override val moonPos: DynModel.Position<*> = object : DynModelBase<>(), DynModel.Position<*> { // TODO
 //        override fun position() = earthPos.position() + Vec3d(384400e3, 0.0, 0.0)
 //    }
-    override val moonPos = emBaryPos
 
     override fun copy() = SolarSystemKeplerModel3000BC3000AD()
+}
+
+/**
+ * https://stjarnhimlen.se/comp/ppcomp.html
+ */
+@Suppress("LocalVariableName", "FunctionName")
+private fun PPCompModel(
+    N: Double, i: Double, w: Double, a: Double, e: Double, M: Double,
+    dN: Double, di: Double, dw: Double, da: Double, de: Double, dM: Double
+): KeplerModel {
+    val T = IntFractTime.J2000.CENTURY / (24 * 3600)
+    val lp = N + w
+    val L = M + lp
+    val dlp = dN + dw
+    val dL = dM + dlp
+    return KeplerModel(
+        a, e, i, L, lp, N,
+        da * T, de * T, di * T, dL * T, dlp * T, dN * T
+    )
 }

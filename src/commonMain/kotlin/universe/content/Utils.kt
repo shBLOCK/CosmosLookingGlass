@@ -12,8 +12,8 @@ fun CelestialBody.setupSimpleSpherical(
         generate {
             color = themeColor
             uvSphere {
-//                this.radius = radius.toFloat()
-                this.radius = 10000000e3f
+                this.radius = (radius).toFloat()
+//                this.radius = 10000000e3f
                 steps = 64
             }
         }

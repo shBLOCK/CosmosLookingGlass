@@ -18,7 +18,7 @@ fun launchApp(ctx: KoolContext) {
 
     val solarSystem = SolarSystem().apply {
         dynModel = SolarSystemKeplerModel3000BC3000AD()
-            .transformed { position, orientation -> // to ICRF
+            .transformed { time, position, orientation -> // to ICRF
                 position.rotate(23.43928.deg, Vec3d.X_AXIS)
                 orientation.rotate(23.43928.deg, Vec3d.X_AXIS)
             }
