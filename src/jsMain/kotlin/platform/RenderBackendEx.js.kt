@@ -9,7 +9,6 @@ import org.khronos.webgl.WebGLRenderingContext
 
 class RenderBackendExWebGL(private val backend: RenderBackendGlImpl) : RenderBackendEx {
     override val maxTextureSize by lazy { GlImpl.gl.getParameter(WebGLRenderingContext.MAX_TEXTURE_SIZE) as Int }
-    override val textureFloatLinear = GlImpl.gl.getExtension("OES_texture_float_linear") != null
 }
 
 @Suppress("ObjectPropertyName")

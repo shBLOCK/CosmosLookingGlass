@@ -9,7 +9,6 @@ import org.lwjgl.opengl.GL45.glGetInteger
 
 class RenderBackendExOpenGL(private val backend: RenderBackendGlImpl) : RenderBackendEx {
     override val maxTextureSize by lazy { glGetInteger(GL_MAX_TEXTURE_SIZE) }
-    override val textureFloatLinear = true
 }
 
 @Suppress("ObjectPropertyName")

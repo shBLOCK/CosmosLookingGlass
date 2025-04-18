@@ -5,7 +5,6 @@ import de.fabmax.kool.pipeline.backend.RenderBackend
 
 interface RenderBackendEx {
     val maxTextureSize: Int
-    val textureFloatLinear: Boolean
 }
 
 expect val RenderBackend.ex: RenderBackendEx
