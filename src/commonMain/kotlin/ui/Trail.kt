@@ -61,8 +61,8 @@ class Trail(val celestialBody: CelestialBody) : BaseReleasable() {
 
         private val baseName = "Trail.DataTex(${celestialBody.name})"
 
-        private val texSize = MutableVec2i(2, 1)
-        private inline val size get() = (texSize.x - 1) * texSize.y
+        private val texSize = MutableVec2i(1, 1)
+        private inline val size get() = texSize.x * texSize.y
         private var buffer = Float32Buffer(texSize.x * texSize.y * 4)
         val texture = StorageTexture2d(
             texSize.x, texSize.y, TexFormat.RGBA_F32, MipMapping.Off,
@@ -77,24 +77,11 @@ class Trail(val celestialBody: CelestialBody) : BaseReleasable() {
         private val headPos get() = headStep.mod(size)
         private val tailPos get() = tailStep.mod(size)
 
-        private fun Float32Buffer.getData(
-            step: Long,
-            result: MutableVec4f,
-            texSize: Vec2i = this@DataTex.texSize
-        ): MutableVec4f {
-            var pos = step.mod((texSize.x - 1) * texSize.y)
-            pos += pos / (texSize.x - 1) // skip the pixel at every end of a row
-            return getVec4f(pos, result)
-        }
+        private fun Float32Buffer.getData(step: Long, result: MutableVec4f, texSize: Vec2i = this@DataTex.texSize) =
+            getVec4f(step.mod(texSize.x * texSize.y), result)
 
-        private fun Float32Buffer.setData(step: Long, data: Vec4f, texSize: Vec2i = this@DataTex.texSize) {
-            var pos = step.mod((texSize.x - 1) * texSize.y)
-            pos += pos / (texSize.x - 1)
-            setVec4f(pos, data)
-            if (pos % texSize.x == 0) {
-                if (pos != 0) setVec4f(pos - 1, data) else setVec4f(texSize.x * texSize.y - 1, data)
-            }
-        }
+        private fun Float32Buffer.setData(step: Long, data: Vec4f, texSize: Vec2i = this@DataTex.texSize) =
+            setVec4f(step.mod(texSize.x * texSize.y), data)
 
         fun clear() {
             headStep = 0L
@@ -104,12 +91,12 @@ class Trail(val celestialBody: CelestialBody) : BaseReleasable() {
         private fun expand(minSize: Int, newHeadStep: Long = headStep) {
             val maxWidth = KoolSystem.requireContext().backend.ex.maxTextureSize.nextPowerOfTwo
             val newTexSize = Vec2i(
-                min((minSize + 1).nextPowerOfTwo, maxWidth),
-                minSize.ceilDiv(maxWidth - 1)
+                min(minSize.nextPowerOfTwo, maxWidth),
+                minSize.ceilDiv(maxWidth)
             )
-            val newSize = (newTexSize.x - 1) * newTexSize.y
+            val newSize = newTexSize.x * newTexSize.y
 
-            val newTailStep = min(newHeadStep + (newSize - 1), tailStep)
+            val newTailStep = min(newHeadStep + newSize, tailStep)
 
             buffer = Float32Buffer(newTexSize.x * newTexSize.y * 4).apply {
                 val tmpVec4f = MutableVec4f()
@@ -174,23 +161,26 @@ class Trail(val celestialBody: CelestialBody) : BaseReleasable() {
         }
 
         fun updateInfoStruct(struct: DataTextureInfo, relativeTo: DataTex = this) = struct.run {
-            headOffset.set((headStep - relativeTo.trail.startStep).toInt())
-            tailOffset.set((tailStep - relativeTo.trail.endStep).toInt())
+            val relStartSec = relativeTo.trail.startStep * relativeTo.trail.stepSize
+            val relEndSec = relativeTo.trail.endStep * relativeTo.trail.stepSize
+            val headSec = headStep * stepSize
+            val tailSec = tailStep * stepSize
+            headOffset.set((IntFract(headSec - relStartSec) / stepSize).toFloat())
+            tailOffset.set((IntFract(tailSec - relEndSec) / stepSize).toFloat())
 
             headPos.set(this@DataTex.headPos)
             tailPos.set(this@DataTex.tailPos)
 
-            val relStep = stepSize.toDouble() / relativeTo.trail.stepSize
-            relStepSize.set(relStep.toFloat())
+            relStepSize.set((stepSize.toDouble() / relativeTo.trail.stepSize.toDouble()).toFloat())
         }
     }
 
     class DataTextureInfo : Struct("DataTextureInfo", MemoryLayout.Std140) {
         /** headStep - startStep */
-        val headOffset = int1("headOffset")
+        val headOffset = float1("headOffset")
 
         /** tailStep - endStep */
-        val tailOffset = int1("tailOffset")
+        val tailOffset = float1("tailOffset")
 
         /** Pixel coord of the head in the data texture */
         val headPos = int1("headPos")
@@ -245,8 +235,10 @@ class Trail(val celestialBody: CelestialBody) : BaseReleasable() {
             val useRef = ref != null && !refMix.isNaN()
 
             with(shader as Shader) {
-                uStartStep.set(startFractStep.toFloat())
-                uEndStep.set((startFractStep + durationFractStep).toFloat())
+                uStart.set(startFractStep.toFloat())
+                uEnd.set((startFractStep + durationFractStep).toFloat())
+                uStartStep.set(0)
+                uEndStep.set((endStep - startStep).toInt())
 
                 uBaseColor.set(celestialBody.themeColor)
                 uBaseLineWidth.set(3F)
@@ -294,8 +286,10 @@ class Trail(val celestialBody: CelestialBody) : BaseReleasable() {
          * Modified from [de.fabmax.kool.scene.TriangulatedLineMesh.Shader]
          */
         inner class Shader : KslShader("Trail Shader") {
-            val uStartStep = uniform1f("uStart")
-            val uEndStep = uniform1f("uEnd")
+            val uStart = uniform1f("uStart")
+            val uEnd = uniform1f("uEnd")
+            val uStartStep = uniform1i("uStartStep")
+            val uEndStep = uniform1i("uEndStep")
 
             val uBaseColor = uniformColor("uBaseColor", Color.LIGHT_GRAY)
             val uBaseLineWidth = uniform1f("uBaseLineWidth", 3F)
@@ -314,9 +308,8 @@ class Trail(val celestialBody: CelestialBody) : BaseReleasable() {
                 program.makeProgram()
             }
 
+            @Suppress("WrapUnaryOperator")
             private fun KslProgram.makeProgram() {
-//                dumpCode = true
-
                 val dataTextureInfoType = struct { DataTextureInfo() }
 
                 val uDataInfo = uniformStruct("uDataInfo") { DataTextureInfo() }
@@ -342,14 +335,33 @@ class Trail(val celestialBody: CelestialBody) : BaseReleasable() {
                         }
                     }
 
+                    // Note: sampleMode: 0: current; -1: previous; 1: next
+
+                    val _fetchDataTex = functionFloat4("_fetchDataTex") {
+                        val tex = paramColorTex2d("tex")
+                        val pos = paramInt1("pos")
+                        body {
+                            val size = int2Var(tex.size(), "size")
+                            val x = int1Var(mod(pos, size.x), "x")
+                            val y = int1Var(pos / size.x, "y")
+                            `if`((pos `{` 0.const) and (x `!=` 0.const)) { // floor div
+                                y -= 1.const
+                            }
+                            y set mod(y, size.y)
+                            tex.load(int2Value(x, y))
+                        }
+                    }
+
                     val _sampleDataTex = functionFloat4("_sampleDataTex") {
                         val tex = paramColorTex2d("tex")
                         val pos = paramFloat1("pos")
                         body {
-                            val texSize = float2Var(tex.size().toFloat2())
-                            val x = mod(pos, texSize.x - 1F.const) + 0.5F.const
-                            val y = floor(pos / (texSize.x - 1F.const)) + 0.5F.const
-                            sampleTexture(tex, float2Value(x, y) / texSize)
+                            val posA = int1Var(floor(pos).toInt1())
+                            val posB = int1Var(ceil(pos).toInt1())
+                            val a = float4Var(_fetchDataTex(tex, posA), "a")
+                            `if`(posA `==` posB) { `return`(a) }
+                            val b = float4Var(_fetchDataTex(tex, posB), "b")
+                            mix(a, b, fract(pos))
                         }
                     }
 
@@ -357,45 +369,55 @@ class Trail(val celestialBody: CelestialBody) : BaseReleasable() {
                         val tex = paramColorTex2d("tex")
                         val info = paramStruct(dataTextureInfoType, "info")
                         val step = paramFloat1("step")
+                        val sampleMode = paramInt1("sampleMode")
                         body {
-                            val relHeadOffset = info.struct.headOffset.ksl.toFloat1() / info.struct.relStepSize.ksl
-                            val relTailOffset = info.struct.tailOffset.ksl.toFloat1() / info.struct.relStepSize.ksl
-                            val size = float1Var((uEndStep.ksl + relTailOffset) - (uStartStep.ksl + relHeadOffset))
-                            size *= info.struct.relStepSize.ksl
+                            val relStepSize = float1Var(info.struct.relStepSize.ksl)
+                            val maxStepFromHead = float1Var(
+                                (uEndStep.ksl.toFloat1() / relStepSize + info.struct.tailOffset.ksl)
+                                    - (uStartStep.ksl.toFloat1() / relStepSize + info.struct.headOffset.ksl)
+                            )
 
                             val step = float1Var(step, "_step")
-                            step *= info.struct.relStepSize.ksl
-                            step -= info.struct.headOffset.ksl.toFloat1()
+                            `if`(sampleMode `==` -1.const) {
+                                step set ceil(step) - 1F.const
+                            }.elseIf(sampleMode `==` 1.const) {
+                                step set floor(step) + 1F.const
+                            }
+                            step /= relStepSize
+                            step += -info.struct.headOffset.ksl
 
-                            // NOTE: this part (extrapolation) is untested
-                            // extrapolate forward
-                            `if`(step `{` 0F.const) {
-                                val endPoint = _sampleDataTex(tex, info.struct.headPos.ksl.toFloat1())
-                                val lastToEndPoint = _sampleDataTex(tex, info.struct.headPos.ksl.toFloat1() + 1F.const)
+                            `if`((0F.const `{=` step) and (step `{=` maxStepFromHead)) {
+                                val u = step + info.struct.headPos.ksl.toFloat1()
+                                `return`(_sampleDataTex(tex, u).xyz)
+                            }.elseIf(step `{` 0F.const) { // extrapolate forward
+                                val endPoint =
+                                    _sampleDataTex(tex, info.struct.headPos.ksl.toFloat1())
+                                val lastToEndPoint =
+                                    _sampleDataTex(tex, info.struct.headPos.ksl.toFloat1() + 1F.const)
                                 `return`(mix(lastToEndPoint.xyz, endPoint.xyz, 1F.const + -step))
-                            }
-                            // extrapolate backward
-                            `if`(step `}` size) {
-                                val endPoint = _sampleDataTex(tex, info.struct.tailPos.ksl.toFloat1())
-                                val lastToEndPoint = _sampleDataTex(tex, info.struct.tailPos.ksl.toFloat1() - 1F.const)
-                                `return`(mix(lastToEndPoint.xyz, endPoint.xyz, (1F.const + (step - size))))
+                            }.`else` { // extrapolate backward
+                                val endPoint =
+                                    _sampleDataTex(tex, info.struct.tailPos.ksl.toFloat1())
+                                val lastToEndPoint =
+                                    _sampleDataTex(tex, info.struct.tailPos.ksl.toFloat1() - 1F.const)
+                                `return`(mix(lastToEndPoint.xyz, endPoint.xyz, (1F.const + (step - maxStepFromHead))))
                             }
 
-                            val u = step + info.struct.headPos.ksl.toFloat1()
-                            _sampleDataTex(tex, u).xyz
+                            NaN3 // should never reach here
                         }
                     }
 
                     val sampleData = functionFloat3("sampleData") {
                         val step = paramFloat1("step")
+                        val sampleMode = paramInt1("sampleMode")
                         body {
-                            val result = float3Var(_sampleData(uDataTex.ksl, uDataInfo, step), "result")
+                            val result = float3Var(_sampleData(uDataTex.ksl, uDataInfo, step, sampleMode), "result")
                             `if`(isNan(uRefMix.ksl).not()) {
-                                val ref = float3Var(_sampleData(uRefDataTex.ksl, uRefDataInfo, step), "ref")
+                                val ref = float3Var(_sampleData(uRefDataTex.ksl, uRefDataInfo, step, sampleMode), "ref")
                                 `if`(uRefMix.ksl `!=` 0F.const) {
                                     ref set mix(
                                         ref,
-                                        _sampleData(uAlterRefDataTex.ksl, uAlterRefDataInfo, step),
+                                        _sampleData(uAlterRefDataTex.ksl, uAlterRefDataInfo, step, sampleMode),
                                         uRefMix.ksl
                                     )
                                 }
@@ -409,9 +431,9 @@ class Trail(val celestialBody: CelestialBody) : BaseReleasable() {
                         val vertexIndex = int1Var(inVertexIndex.toInt1(), "vertexIndex")
                         val nodeIndex = vertexIndex / 2.const
                         val step = iStep.input
-                        step set floor(uStartStep.ksl + nodeIndex.toFloat1())
+                        step set floor(uStart.ksl + nodeIndex.toFloat1())
 
-                        `if`((step - uEndStep.ksl) `}=` 1F.const) {
+                        `if`((step - uEnd.ksl) `}=` 1F.const) {
                             step set NaN // tells the fragment shader to discard, in case the line below doesn't discard the primitive
                             outPosition set NaN4 // uhh... one way of discarding the primitive...?
                         }.`else` {
@@ -419,14 +441,14 @@ class Trail(val celestialBody: CelestialBody) : BaseReleasable() {
                             val camData = cameraData()
                             val ar = camData.viewport.z / camData.viewport.w
 
-                            step set clamp(step, uStartStep.ksl, uEndStep.ksl)
+                            step set clamp(step, uStart.ksl, uEnd.ksl)
 
-                            val pos = sampleData(step)
-                            val prevPos = sampleData(step - 1F.const)
-                            val nextPos = sampleData(step + 1F.const)
+                            val pos = sampleData(step, 0.const)
+                            val prevPos = sampleData(step, -1.const)
+                            val nextPos = sampleData(step, 1.const)
 
                             val shiftDir = float1Var(name = "shiftDir").apply {
-                                `if`((vertexIndex.rem(2.const)) `==` 0.const) { set((-1F).const) }.`else` { set(1F.const) }
+                                `if`((vertexIndex.rem(2.const)) `==` 0.const) { set(-1F.const) }.`else` { set(1F.const) }
                             }
                             val lineWidthPort = float1Port("lineWidth", uBaseLineWidth.ksl)
 
@@ -449,7 +471,7 @@ class Trail(val celestialBody: CelestialBody) : BaseReleasable() {
                             val rCrossS = float1Var(cross2(r, s))
                             `if`(abs(rCrossS) gt 0.001f.const) {
                                 // lines are neither collinear nor parallel
-                                val t = float1Var(clamp(cross2(q - p, s) / rCrossS, (-5f).const, 5f.const))
+                                val t = float1Var(clamp(cross2(q - p, s) / rCrossS, -5f.const, 5f.const))
                                 x set p + t * r
                             }
 

@@ -59,7 +59,8 @@ class MainUI(private val solarSystem: Universe) : BaseReleasable() {
     }
 
     init {
-        cbToTrail[solarSystem[Moon]!!]!!.stepSize = 24 * 3600 / 4
+        cbToTrail[solarSystem[Earth]!!]!!.stepSize /= 3
+        cbToTrail[solarSystem[Moon]!!]!!.stepSize /= 3
         trailManager.trails.forEach {
             it.meshInstances[0].ref = cbToTrail[solarSystem[Sun]!!]
             it.meshInstances[0].alterRef = cbToTrail[solarSystem[Earth]!!]
@@ -139,6 +140,7 @@ class MainUI(private val solarSystem: Universe) : BaseReleasable() {
                 it.currentTime = solarSystem.time
                 it.endTime = solarSystem.time
                 it.startTime = max(IntFract.ZERO, solarSystem.time - 100 * 365.25 * 24 * 3600)
+//                it.startTime = max(IntFract.ZERO, solarSystem.time - 1 * 365.25 * 24 * 3600)
 //                it.startTime = it.endTime - IntFract(3600L * 24 * 365 * 100)
 //                it.startTime = it.endTime - IntFract(3600L * 24 * 365)
 //                it.meshInstances[0].refMix = sin(Time.gameTime) * .5 + .5

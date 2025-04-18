@@ -20,6 +20,8 @@ class IntFract(val int: Long, val fract: Double) {
     inline operator fun minus(value: Double) = normalizing(int, fract - value)
     inline operator fun plus(other: IntFract) = normalizing(int + other.int, fract + other.fract)
     inline operator fun minus(other: IntFract) = normalizing(int - other.int, fract - other.fract)
+    inline operator fun unaryPlus() = this
+    inline operator fun unaryMinus() = normalizing(-int, -fract)
     inline operator fun div(value: Int) = int / value + (int % value + fract) / value
     inline operator fun div(value: Long) = int / value + (int % value + fract) / value
     inline operator fun div(value: Double) = int / value + fract / value

@@ -3,6 +3,7 @@
 package utils
 
 import de.fabmax.kool.modules.ksl.lang.*
+import kotlin.jvm.JvmName
 
 val KslScopeBuilder.NaN get() = Float.NaN.toRawBits().const.toFloatBits()
 val KslScopeBuilder.NaN2 get() = Float.NaN.toRawBits().const2.toFloatBits()
@@ -53,4 +54,7 @@ infix fun <V, S> KslVectorExpression<V, S>.`}=`(right: KslVectorExpression<V, S>
 //endregion
 
 //TODO: remove when mod if officially supported
+@JvmName("fmod")
 fun KslScopeBuilder.mod(x: KslScalarExpression<KslFloat1>, y: KslScalarExpression<KslFloat1>) = x - y * floor(x / y)
+@JvmName("imod")
+fun KslScopeBuilder.mod(x: KslScalarExpression<KslInt1>, y: KslScalarExpression<KslInt1>) = ((x % y) + y) % y
