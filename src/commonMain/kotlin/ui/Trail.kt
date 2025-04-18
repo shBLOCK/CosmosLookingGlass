@@ -52,7 +52,7 @@ class Trail(val celestialBody: CelestialBody) : BaseReleasable() {
      *
      * P.S.: To workaround texture size limitations, we use 2d textures.
      * Thus, to ensure correct interpolation between rows,
-     * the pixels at the left edge of a row and right edge of the next row of the texture represents the same step.
+     * the pixels at the left edge of a row and right edge of the next row of the texture represent the same step.
      */
     inner class DataTex : BaseReleasable() {
         init {
@@ -66,7 +66,7 @@ class Trail(val celestialBody: CelestialBody) : BaseReleasable() {
         private var buffer = Float32Buffer(texSize.x * texSize.y * 4)
         val texture = StorageTexture2d(
             texSize.x, texSize.y, TexFormat.RGBA_F32, MipMapping.Off,
-            SamplerSettings().repeating().linear(),
+            SamplerSettings().repeating().nearest(), // Native REPEAT isn't actually used as we only use texelFetch
             name = UniqueId.nextId(baseName)
         ).releaseWith(this)
 
