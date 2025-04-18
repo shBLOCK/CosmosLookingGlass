@@ -1,7 +1,6 @@
 package ui
 
 import de.fabmax.kool.KoolContext
-import de.fabmax.kool.math.PI_F
 import de.fabmax.kool.modules.ksl.KslUnlitShader
 import de.fabmax.kool.modules.ksl.blocks.TexCoordAttributeBlock
 import de.fabmax.kool.modules.ksl.blocks.texCoordAttributeBlock
@@ -214,20 +213,25 @@ class MainUI(private val solarSystem: Universe) : BaseReleasable() {
 
                                 val d = float1Var(uv.x, "d")
 
-                                // arrows
-                                d += abs(0.5F.const - uv.y) * 1F.const
+                                color.a set 0F.const
+
+                                d += abs(0.5F.const - uv.y)
+                                // rail arrows
                                 `if`(fract(d / 2F.const - uOffset) `{` 0.5F.const) {
+                                    color.a set 1F.const
+                                }
+                                val d2end = float1Var(d - uEnd - 0.5F.const, "d2end")
+                                // end arrow
+                                `if`(abs(d2end) `{` 0.5F.const) {
+                                    color.a set 1F.const
+                                }
+                                // cutout beyond end
+                                `if`(d2end `}=` 0.5F.const) {
                                     color.a set 0F.const
                                 }
 
                                 // fade in
                                 color.a *= min(uv.x / 8F.const, 1F.const)
-
-                                `if`(distance(uv, float2Value(uEnd, 0.5F.const)) `{` 0.5F.const) {
-                                    color.a set sin(fract(uEnd / 2F.const - uOffset) * (PI_F * 2F).const) * 0.3F.const + 0.7F.const
-                                }.`else` {
-                                    `if`(uv.x `}` uEnd) { color.a set 0F.const }
-                                }
 
                                 colorPort.input(color)
                             }
@@ -247,6 +251,7 @@ class MainUI(private val solarSystem: Universe) : BaseReleasable() {
                 onUpdate {
                     val railY = slotInsertionToPx(0.0).toFloat()
                     val posCenterPx = posToPx(0.0).toFloat()
+                    val handlePosPx = posToPx(pos.value)
 
                     generate {
                         withTransform {
@@ -255,7 +260,7 @@ class MainUI(private val solarSystem: Universe) : BaseReleasable() {
                                 isCenteredOrigin = false
                                 origin.x = posCenterPx
                                 origin.y = railY - lineWidth.px / 2F
-                                size.x = (posToPx(pos.value) - posCenterPx).toFloat()
+                                size.x = (handlePosPx - posCenterPx).toFloat()
                                 size.y = lineWidth.px
 
                                 generateTexCoords(1F)
@@ -283,7 +288,6 @@ class MainUI(private val solarSystem: Universe) : BaseReleasable() {
 
         override fun render(ctx: KoolContext) {
             super.render(ctx)
-
             surface.getMeshLayer(modifier.zLayer + 0)
                 .addCustomLayer("RailAnimation") { railAnimation }
         }
