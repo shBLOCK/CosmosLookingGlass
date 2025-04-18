@@ -78,3 +78,25 @@ class Neptune : SingletonCelestialBody<Neptune, Neptune.Companion>() {
     companion object : CompanionObj<Neptune>();
     override val companion get() = Companion
 }
+
+class Moon : SingletonCelestialBody<Moon, Moon.Companion>() {
+    override val themeColor = SolarSystemConsts.MOON_THEME_COLOR
+
+    init {
+        setupSimpleSpherical(SolarSystemConsts.MOON_RADIUS, SolarSystemConsts.MOON_FLATTENING)
+    }
+
+    companion object : CompanionObj<Moon>();
+    override val companion get() = Companion
+}
+
+class Sun : SingletonCelestialBody<Sun, Sun.Companion>() {
+    override val themeColor = SolarSystemConsts.SUN_THEME_COLOR
+
+    init {
+        setupSimpleSpherical(SolarSystemConsts.SUN_RADIUS, SolarSystemConsts.SUN_FLATTENING)
+    }
+
+    companion object : CompanionObj<Sun>();
+    override val companion get() = Companion
+}
