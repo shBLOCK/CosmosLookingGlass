@@ -235,29 +235,37 @@ def run_compute(shader: moderngl.ComputeShader, size: int):
               help="Input equirectangular image path.")
 @click.option("--output", "output_path", required=True, type=click.Path(file_okay=True, dir_okay=False),
               help="Output cubemap image path, suffixes like '_neg_x' or '_pos_y' are appended to the the file name.")
-@click.option("--size", required=True, type=click.IntRange(1, 16384, clamp=True),
+@click.option("--size", "cubemap_size", required=True, type=click.IntRange(1, 16384, clamp=True),
               help="Size of output cubemap, must be multiples of 8.")
 @click.option("--color", "mode", flag_value="color", default=True, help="Color image mode.")
 @click.option("--normal-map", "mode", flag_value="normal", help="Normal map mode.")
-@click.option("--multisample", type=click.IntRange(-1, 100, clamp=True), default=0,
+@click.option("--multisample", type=click.IntRange(-1, 100, clamp=True), default=-1,
               help="Multisample level to use, the multisample grid with be a square grid with width of (<this value> * 2 + 1). Use -1 to use automatically calculated level based on in/out texture size.")
 def main(
     input_path: os.PathLike[str],
     output_path: os.PathLike[str],
-    size: int,
+    cubemap_size: int,
     mode: str,
-    multisample: int  # TODO: auto determine multisample level when -1
+    multisample: int
 ):
-    shader = make_shader(multisample, mode)
-
     with timed_step("Loading equirec image..."):
         equirec_img = cv2.imread(input_path, cv2.IMREAD_UNCHANGED)
         if len(equirec_img.shape) == 3:
             equirec_img = cv2.cvtColor(equirec_img, cv2.COLOR_RGB2RGBA)
         equirec_buffer = gl.buffer(equirec_img)
 
+    if multisample == -1:
+        equirec_face_size = max(equirec_img.shape[1] / 4, equirec_img.shape[0] / 2)
+        scale_factor = equirec_face_size / cubemap_size
+        multisample = math.ceil((scale_factor / 2) * 2.0)
+
+    print(f"Multisample level: {multisample}")
+
+    with timed_step("Compiling shader..."):
+        shader = make_shader(multisample, mode)
+
     with timed_step("Setup compute shader..."):
-        cubemap = gl.texture_cube([size] * 2, components=4)
+        cubemap = gl.texture_cube([cubemap_size] * 2, components=4)
         assert cubemap.size[0] % 8 == 0
 
         cubemap.bind_to_image(unit=0, read=False, write=True)
