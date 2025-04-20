@@ -5,7 +5,6 @@ import org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalDistributionDsl
 import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsPlugin.Companion.kotlinNodeJsEnvSpec
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
-import kotlin.jvm.java
 
 plugins {
     kotlin("multiplatform") version "2.1.20"
@@ -238,6 +237,35 @@ val generateFonts by tasks.registering {
     }
 }
 
+val generateCubemaps by tasks.registering {
+    group = "assets"
+    doLast {
+        fun gen(input: String, output: String, size: Int) = exec {
+            println("$input -> $output (size=$size)")
+            workingDir("${assetsRoot}/tools")
+            executable("${assetsRoot}/tools/bin/hatch.exe")
+            args("run", "python", "src/cubemapper.py")
+            args(
+                "--input", "../raw/textures/${input}",
+                "--output", "../generated/textures/${output}",
+                "--size", size
+            )
+        }
+
+        val SIZE = 2048
+        gen("celestial_body/earth/ppe_color_10k.jpg", "celestial_body/earth/color.png", SIZE)
+        gen("celestial_body/jupiter/ppe_color_6k.jpg", "celestial_body/jupiter/color.png", SIZE)
+        gen("celestial_body/mars/ppe_color_12k.jpg", "celestial_body/mars/color.png", SIZE)
+        gen("celestial_body/mercury/ppe_color_1k.jpg", "celestial_body/mercury/color.png", SIZE)
+        gen("celestial_body/moon/ppe_color_4k.jpg", "celestial_body/moon/color.png", SIZE)
+        gen("celestial_body/neptune/ppe_color_1k.jpg", "celestial_body/neptune/color.png", SIZE)
+        gen("celestial_body/saturn/ppe_color_2k.jpg", "celestial_body/saturn/color.png", SIZE)
+        gen("celestial_body/sun/ppe_color_1k.jpg", "celestial_body/sun/color.png", SIZE)
+        gen("celestial_body/uranus/ppe_color_1k.jpg", "celestial_body/uranus/color.png", SIZE)
+        gen("celestial_body/venus/ppe_color_2k.jpg", "celestial_body/venus/color.png", SIZE)
+    }
+}
+
 val generateAssetsSetup by tasks.registering {
     group = "assets"
     doLast {
@@ -253,7 +281,10 @@ val generateAssetsSetup by tasks.registering {
 @Suppress("unused")
 val generateAssets by tasks.registering {
     group = "assets"
-    val genTasks = arrayOf(generateFonts)
+    val genTasks = arrayOf(
+        generateFonts,
+        generateCubemaps
+    )
     dependsOn(generateAssetsSetup, *genTasks)
     genTasks.forEach { it.get().mustRunAfter(generateAssetsSetup) }
 }

@@ -180,7 +180,7 @@ def make_shader(multisample_level: int, mode: str):
         }
 
         vec4 mixSamples(in Sample samples[MULTISAMPLE_GRID][MULTISAMPLE_GRID]) {
-            #if $mode_color
+            #if $mode_is_color
             dvec4 acc = dvec4(0);
             for (int x = 0; x < MULTISAMPLE_GRID; x++) {
                 for (int y = 0; y < MULTISAMPLE_GRID; y++) {
@@ -188,7 +188,7 @@ def make_shader(multisample_level: int, mode: str):
                 }
             }
             return vec4(acc / (MULTISAMPLE_GRID * MULTISAMPLE_GRID));
-            #elif $mode_normal
+            #elif $mode_is_normal_map
             #endif
         }
 
@@ -212,20 +212,19 @@ def make_shader(multisample_level: int, mode: str):
         raise NotImplementedError("normal map mode")
     shader_src = string.Template(shader_src).substitute(
         multisample_level=multisample_level,
-        mode_color=int(mode == "color"),
-        mode_normal=int(mode == "normal")
+        mode_is_color=int(mode == "color"),
+        mode_is_normal_map=int(mode == "normal_map")
     )
     return gl.compute_shader(shader_src)
 
 
 def run_compute(shader: moderngl.ComputeShader, size: int):
-    assert size % 8 == 0
     batch_size = 8
-    batches = math.ceil(size // 8 / batch_size)
+    batches = math.ceil(size / 8 / batch_size)
     for layer, batch in tqdm.tqdm(itertools.product(range(6), range(batches)), total=6 * batches):
         with gl.query(time=True) as query:
             shader["uInvocationIDOrigin"] = (0, batch * 8 * batch_size, layer)
-            shader.run(size // 8, batch_size, 1)
+            shader.run(math.ceil(size / 8), batch_size, 1)
         _ = query.elapsed
 
 
@@ -236,9 +235,8 @@ def run_compute(shader: moderngl.ComputeShader, size: int):
 @click.option("--output", "output_path", required=True, type=click.Path(file_okay=True, dir_okay=False),
               help="Output cubemap image path, suffixes like '_neg_x' or '_pos_y' are appended to the the file name.")
 @click.option("--size", "cubemap_size", required=True, type=click.IntRange(1, 16384, clamp=True),
-              help="Size of output cubemap, must be multiples of 8.")
-@click.option("--color", "mode", flag_value="color", default=True, help="Color image mode.")
-@click.option("--normal-map", "mode", flag_value="normal", help="Normal map mode.")
+              help="Size of output cubemap.")
+@click.option("--mode", "mode", type=click.Choice(["color", "normal_map"]), default="color")
 @click.option("--multisample", type=click.IntRange(-1, 100, clamp=True), default=-1,
               help="Multisample level to use, the multisample grid with be a square grid with width of (<this value> * 2 + 1). Use -1 to use automatically calculated level based on in/out texture size.")
 def main(
@@ -266,7 +264,6 @@ def main(
 
     with timed_step("Setup compute shader..."):
         cubemap = gl.texture_cube([cubemap_size] * 2, components=4)
-        assert cubemap.size[0] % 8 == 0
 
         cubemap.bind_to_image(unit=0, read=False, write=True)
         shader["uCubeMap"] = 0
