@@ -147,22 +147,22 @@ def make_shader(multisample_level: int, mode: str):
             //@formatter:off
             switch (layer) {
                 case 0:
-                    dir = dvec3(-1.0, uv.x, uv.y);
+                    dir = dvec3(1.0, -uv.y, -uv.x);
                     break;
                 case 1:
-                    dir = dvec3(1.0, uv.x, uv.y);
+                    dir = dvec3(-1.0, -uv.y, uv.x);
                     break;
                 case 2:
-                    dir = dvec3(uv.x, -1.0, uv.y);
-                    break;
-                case 3:
                     dir = dvec3(uv.x, 1.0, uv.y);
                     break;
+                case 3:
+                    dir = dvec3(uv.x, -1.0, -uv.y);
+                    break;
                 case 4:
-                    dir = dvec3(uv.x, uv.y, -1.0);
+                    dir = dvec3(uv.x, -uv.y, 1.0);
                     break;
                 case 5:
-                    dir = dvec3(uv.x, uv.y, 1.0);
+                    dir = dvec3(-uv.x, -uv.y, -1.0);
                     break;
             }
             //@formatter:on
@@ -274,7 +274,7 @@ def main(
     run_compute(shader, cubemap.size[0])
 
     with timed_step("Saving cubemap"):
-        suffixes = ["neg_x", "pos_x", "neg_y", "pos_y", "neg_z", "pos_z"]
+        suffixes = ["pos_x", "neg_x", "pos_y", "neg_y", "pos_z", "neg_z"]
         output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         face_buffer = np.empty([*cubemap.size, 4], np.uint8)
