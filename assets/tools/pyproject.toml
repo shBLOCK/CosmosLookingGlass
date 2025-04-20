@@ -1,0 +1,17 @@
+[project]
+name = "AssetScripts"
+requires-python = "~=3.13"
+dependencies = [
+    "click==8.1.8",
+    "opencv-python==4.11.0.86",
+    "numpy==2.2.4",
+    "spatium==1.5.5",
+    "moderngl==5.12.0",
+    "tqdm==4.67.1",
+    "viztracer"
+]
+version = "0"
+
+[tool.hatch.envs.default]
+type = "virtual"
+path = ".venv"

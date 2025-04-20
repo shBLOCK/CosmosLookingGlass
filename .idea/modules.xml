@@ -4,6 +4,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/SolarUtils.iml" filepath="$PROJECT_DIR$/.idea/SolarUtils.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/kool/kool.iml" filepath="$PROJECT_DIR$/.idea/modules/kool/kool.iml" />
+      <module fileurl="file://$PROJECT_DIR$/assets/tools/tools.iml" filepath="$PROJECT_DIR$/assets/tools/tools.iml" />
     </modules>
   </component>
 </project>

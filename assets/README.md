@@ -15,3 +15,4 @@ All assets are "deployed" by the `deployAssets` gradle task:
 - [msdf-atlas-gen.exe](tools/bin/msdf-atlas-gen.exe): https://github.com/Chlumsky/msdf-atlas-gen
 - [Planetary Texture Map Sources 1.pdf](Planetary%20Texture%20Map%20Sources%201.pdf): [ProximaCc YouTube](https://www.youtube.com/watch?v=OEmpYnjuFVc)
 - [Planetary Texture Map Sources 2.pdf](Planetary%20Texture%20Map%20Sources%202.pdf): [ProximaCc YouTube](https://www.youtube.com/watch?v=rLBfHBFfQfo)
+- Celestial body textures: see [this markdown](raw/textures/celestial_body/README.md)
