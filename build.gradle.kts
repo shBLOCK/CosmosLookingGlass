@@ -5,6 +5,7 @@ import org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalDistributionDsl
 import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsPlugin.Companion.kotlinNodeJsEnvSpec
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
+import kotlin.jvm.java
 
 plugins {
     kotlin("multiplatform") version "2.1.20"
@@ -141,18 +142,8 @@ operator fun File.div(relative: String) = resolve(relative)
 val KotlinSourceSet.resourcesDir
     get() = resources.srcDirs.also { check(it.size == 1) }.first()!!
 
-val cleanMergedAndDeployedResources by tasks.registering {
-    doLast {
-        delete("${rootDir}/assets/all")
-        delete(kotlin.sourceSets["jvmMain"].resourcesDir / "assets")
-        delete(kotlin.sourceSets["jsMain"].resourcesDir / "assets")
-    }
-}
-
 @Suppress("unused")
 val clean by tasks.getting(Task::class) {
-    dependsOn(cleanMergedAndDeployedResources)
-
     doLast {
         delete("${rootDir}/dist")
         delete(fileTree("${rootDir}/wechat/miniprogram/index/src") {
@@ -216,6 +207,7 @@ val jsWeChatMinifiedBuild by tasks.registering {
 
 val assetsRoot = "${rootDir}/assets"
 
+// region Asset Generation
 val generateFonts by tasks.registering {
     group = "assets"
     doLast {
@@ -265,6 +257,18 @@ val generateAssets by tasks.registering {
     dependsOn(generateAssetsSetup, *genTasks)
     genTasks.forEach { it.get().mustRunAfter(generateAssetsSetup) }
 }
+// endregion
+
+// region Asset Deploy
+val cleanMergedAndDeployedResources by tasks.registering {
+    clean.dependsOn(this)
+
+    doLast {
+        delete("${rootDir}/assets/all")
+        delete(kotlin.sourceSets["jvmMain"].resourcesDir / "assets")
+        delete(kotlin.sourceSets["jsMain"].resourcesDir / "assets")
+    }
+}
 
 val deployAssets by tasks.registering {
     group = "assets"
@@ -306,3 +310,4 @@ val jvmProcessResources by tasks.getting(Task::class) {
 val jsProcessResources by tasks.getting(Task::class) {
     dependsOn(deployAssets)
 }
+// endregion
