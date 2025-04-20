@@ -216,29 +216,16 @@ val jsWeChatMinifiedBuild by tasks.registering {
 
 val assetsRoot = "${rootDir}/assets"
 
-@Suppress("unused")
-val generateAssets by tasks.registering {
+val generateFonts by tasks.registering {
     group = "assets"
-    doFirst {
-        if (!org.gradle.internal.os.OperatingSystem.current().isWindows)
-            throw GradleException("processAssets task only works on windows.")
-    }
-
-    // clean
-    doFirst {
-        delete("${rootDir}/assets/generated")
-        mkdir("${assetsRoot}/generated")
-    }
-
-    // fonts
     doLast {
         mkdir("${assetsRoot}/generated/fonts")
 
         exec {
             workingDir(assetsRoot)
-            executable("${assetsRoot}/msdf-atlas-gen.exe")
+            executable("${assetsRoot}/tools/bin/msdf-atlas-gen.exe")
             args(
-                "-varfont", "NotoSans-VariableFont_wdth,wght.ttf?wght=400",
+                "-varfont", "./raw/fonts/NotoSans-VariableFont_wdth,wght.ttf?wght=400",
                 "-type", "mtsdf",
                 "-size", "36",
                 "-chars", "[0x20, 0x7E]",
@@ -257,6 +244,26 @@ val generateAssets by tasks.registering {
             metaFile.writeText(gson.toJson(data))
         }
     }
+}
+
+val generateAssetsSetup by tasks.registering {
+    group = "assets"
+    doLast {
+        if (!org.gradle.internal.os.OperatingSystem.current().isWindows)
+            throw GradleException("processAssets task only works on windows.")
+
+        // clean
+        delete("${rootDir}/assets/generated")
+        mkdir("${assetsRoot}/generated")
+    }
+}
+
+@Suppress("unused")
+val generateAssets by tasks.registering {
+    group = "assets"
+    val genTasks = arrayOf(generateFonts)
+    dependsOn(generateAssetsSetup, *genTasks)
+    genTasks.forEach { it.get().mustRunAfter(generateAssetsSetup) }
 }
 
 val deployAssets by tasks.registering {
