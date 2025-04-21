@@ -81,6 +81,31 @@ class MainUI(private val solarSystem: Universe) : BaseReleasable() {
 
             viewport.modifier.layout(FreeLayout)
 
+            Button("Sun") {
+                val sun = solarSystem[Sun]!!
+
+
+//                solarSystem.scene.camera.projectViewport(
+//                    sun.toGlobalCoords(MutableVec3d()),
+//                    solarSystem.scene.mainRenderPass.viewport,
+//                    spos
+//                )
+                var sph = solarSystem.scene.camera.projectSphere(sun.toGlobalCoords(MutableVec3d()), sun.outlineRadius)
+                val r = sph.majorRadius * solarSystem.scene.mainRenderPass.viewport.height / 2.0
+                var spos = sph.center * (solarSystem.scene.mainRenderPass.viewport.height / 2.0)
+                spos = Vec2d(spos.x, -spos.y)
+                spos += Vec2d(solarSystem.scene.mainRenderPass.viewport.width.toDouble(), solarSystem.scene.mainRenderPass.viewport.height.toDouble()) / 2.0
+                modifier
+                    .free(spos, AlignmentX.Center, AlignmentY.Center)
+                    .size(300.dp, 300.dp)
+                    .background(UiRenderer {
+                        with(it) {
+                            getUiPrimitives(0).localCircleBorder(150.dp.px, 150.dp.px, r.toFloat(), 3F, Color.GREEN)
+                        }
+                    })
+                    .isBlocking(false)
+            }
+
 //            for (pl in listOf<CelestialBody>(solarSystem.earth, solarSystem.mercury, solarSystem.jupiter).shuffled()) {
 //                val pos = pl.toGlobalCoords(MutableVec3d())
 //                if (solarSystem.camera.dataD.globalLookDir dot (pos - solarSystem.camera.dataD.globalPos) <= 0.0) continue
@@ -112,6 +137,7 @@ class MainUI(private val solarSystem: Universe) : BaseReleasable() {
                     ?: "UTC+${utcTimeState.value.value}"
                 Text(timeText) {
                     modifier
+                        .font(sizes.largeText)
                         .alignX(AlignmentX.Center)
                 }
 

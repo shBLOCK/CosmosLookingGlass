@@ -27,7 +27,7 @@ class MainCameraControl(val view: RenderPass.View) : BaseReleasable(), InputStac
         private const val SCROLL_ZOOM_SPEED = 0.1
         private const val DRAG_ROTATE_SPEED = 0.15
 
-        private const val MAX_FAR_TO_NEAR_RATIO = 3e5
+        private const val MAX_FAR_TO_NEAR_RATIO = 1e7
     }
 
     init {
@@ -141,6 +141,7 @@ class MainCameraControl(val view: RenderPass.View) : BaseReleasable(), InputStac
 
             if (halfFov.rad > MIN_HALF_FOV_RAD) {
                 var d = halfSize / halfFov.tan
+
                 if (true || !camera.isZeroToOneDepth) {
                     val nearClip = d - nearClipDist
                     val farClip = d + farClipDist

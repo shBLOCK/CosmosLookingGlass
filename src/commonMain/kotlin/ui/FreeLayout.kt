@@ -33,10 +33,11 @@ object FreeLayout : Layout {
 fun UiModifier.free(
     x: Double, y: Double,
     alignX: AlignmentX = AlignmentX.Start, alignY: AlignmentY = AlignmentY.Top
-) {
+) = this.apply {
     margin(start = x.dpx, top = y.dpx, end = Dp.ZERO, bottom = Dp.ZERO)
     align(alignX, alignY)
 }
 
-fun UiModifier.free(pos: Vec2d, alignX: AlignmentX = AlignmentX.Start, alignY: AlignmentY = AlignmentY.Top) =
+fun UiModifier.free(pos: Vec2d, alignX: AlignmentX = AlignmentX.Start, alignY: AlignmentY = AlignmentY.Top) = this.apply {
     free(pos.x, pos.y, alignX, alignY)
+}

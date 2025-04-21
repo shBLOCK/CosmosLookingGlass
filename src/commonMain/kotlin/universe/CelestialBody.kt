@@ -12,6 +12,7 @@ abstract class CelestialBody : Node() {
     }
 
     open val themeColor: Color = Color.WHITE
+    open val outlineRadius: Double = 0.0
 
     var dynModel: CelestialDynModel? = null
         internal set

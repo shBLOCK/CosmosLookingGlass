@@ -1,5 +1,6 @@
 package universe
 
+import de.fabmax.kool.pipeline.DepthMode
 import de.fabmax.kool.pipeline.RenderPass
 import de.fabmax.kool.scene.Scene
 import de.fabmax.kool.util.Releasable
@@ -11,6 +12,7 @@ open class Universe : AbstractMutableSet<CelestialBody>() {
     val scene = object : Scene("Universe") {
         init {
             mainRenderPass.isDoublePrecision = true
+            mainRenderPass.depthMode = DepthMode.Legacy
         }
 
         override fun update(updateEvent: RenderPass.UpdateEvent) {

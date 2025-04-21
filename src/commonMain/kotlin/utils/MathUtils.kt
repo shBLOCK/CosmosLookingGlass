@@ -3,11 +3,11 @@
 package utils
 
 import de.fabmax.kool.math.*
+import de.fabmax.kool.scene.Camera
+import de.fabmax.kool.scene.OrthographicCamera
+import de.fabmax.kool.scene.PerspectiveCamera
 import de.fabmax.kool.util.Time
-import kotlin.math.acos
-import kotlin.math.atan2
-import kotlin.math.cos
-import kotlin.math.sin
+import kotlin.math.*
 
 const val SPEED_OF_LIGHT = 299792458.0
 
@@ -73,3 +73,39 @@ fun MutableVec3d.rotate(angle: AngleD, axis: RayD) = this.apply {
 
 fun mix(a: Float, b: Float, t: Float) = a + (b - a) * t
 fun mix(a: Double, b: Double, t: Double) = a + (b - a) * t
+
+interface SphereCameraProjectionResult {
+    val center: Vec2d
+    val majorRadius: Double
+    val minorRadius: Double
+    val area: Double
+}
+
+fun Camera.projectSphere(center: Vec3d, radius: Double) = when (this) {
+    is OrthographicCamera -> {
+        object : SphereCameraProjectionResult {
+            override val center = MutableVec3d().also { project(center, it) }.xy
+            override val majorRadius = radius / (abs((top - bottom).toDouble()) / 2.0)
+            override val minorRadius = majorRadius
+            override val area by lazy { PI * majorRadius * minorRadius }
+        }
+    }
+
+    is PerspectiveCamera -> {
+        // https://iquilezles.org/articles/sphereproj/
+        val o = view.transform(center, 1.0, MutableVec3d())
+        o.z = -o.z
+        val r2 = radius * radius
+        val z2 = o.z * o.z
+        val l2 = o.sqrLength()
+        val fle = 1.0 / tan(fovY.rad.toDouble() / 2.0)
+        object : SphereCameraProjectionResult {
+            override val center by lazy { o.xy * fle * o.z / (z2 - r2) }
+            override val majorRadius by lazy { fle * sqrt(-r2 * (r2 - l2) / ((l2 - z2) * (r2 - z2) * (r2 - z2))) * o.xy.length() }
+            override val minorRadius by lazy { fle * sqrt(-r2 * (r2 - l2) / ((l2 - z2) * (r2 - z2) * (r2 - l2))) * o.xy.length() }
+            override val area by lazy { -PI * fle * fle * r2 * sqrt(abs((l2 - r2) / (r2 - z2))) / (r2 - z2) }
+        }
+    }
+
+    else -> throw NotImplementedError("$this")
+}
