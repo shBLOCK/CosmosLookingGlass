@@ -46,8 +46,6 @@ class TransformedUniverseDynModel(
     override fun getDynModelFor(celestialBody: CelestialBody): CelestialDynModel? =
         delegate.getDynModelFor(celestialBody)?.transformed(transform)
 
-    override fun copy() = TransformedUniverseDynModel(transform, delegate.copyTyped())
-
     override fun seek(time: IntFract) {
         delegate.seek(time)
         super.seek(time)

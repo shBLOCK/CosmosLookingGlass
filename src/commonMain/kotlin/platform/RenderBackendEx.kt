@@ -5,7 +5,9 @@ import de.fabmax.kool.pipeline.backend.RenderBackend
 
 interface RenderBackendEx {
     val maxTextureSize: Int
+
+    companion object
 }
 
 expect val RenderBackend.ex: RenderBackendEx
-expect fun KoolContext.initRenderBackendEx()
+expect fun RenderBackendEx.Companion.init(ctx: KoolContext)

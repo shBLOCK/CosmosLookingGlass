@@ -66,7 +66,7 @@ open class SlottedReboundSliderNode(parent: UiNode?, surface: UiSurface) :
     protected fun slotInsertionFromPx(px: Double) = (1.0 - (px - paddingTopPx) / innerHeightPx)
     protected fun handlePx() = Vec2d(posToPx(pos.value), slotInsertionToPx(slotInsertion.value))
 
-    private fun update() {
+    fun update() {
         var pos = pos.use()
         var slotInsertion = slotInsertion.use()
 
@@ -137,8 +137,6 @@ open class SlottedReboundSliderNode(parent: UiNode?, surface: UiSurface) :
     }
 
     override fun render(ctx: KoolContext) {
-        update()
-
         super.render(ctx)
 
         val handle = handlePx().toVec2f()

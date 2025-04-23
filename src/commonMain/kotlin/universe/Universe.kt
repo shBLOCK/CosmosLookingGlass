@@ -1,31 +1,26 @@
 package universe
 
 import de.fabmax.kool.pipeline.DepthMode
-import de.fabmax.kool.pipeline.RenderPass
 import de.fabmax.kool.scene.Scene
+import de.fabmax.kool.scene.TrsTransformD
+import de.fabmax.kool.scene.addGroup
+import de.fabmax.kool.util.BaseReleasable
 import de.fabmax.kool.util.Releasable
 import dynamics.UniverseDynModel
 import utils.IntFract
+import utils.MutableCollectionMixin
 import utils.ReleasableImpl
 
-open class Universe : AbstractMutableSet<CelestialBody>() {
+open class Universe : MutableSet<CelestialBody>, MutableCollectionMixin<CelestialBody>, BaseReleasable() {
     val scene = object : Scene("Universe") {
         init {
+            addDependingReleasable(this@Universe)
             mainRenderPass.isDoublePrecision = true
             mainRenderPass.depthMode = DepthMode.Legacy
         }
-
-        override fun update(updateEvent: RenderPass.UpdateEvent) {
-            this@Universe.update(updateEvent)
-            super.update(updateEvent)
-        }
-
-        override fun release() {
-            // Release (thus remove) all celestial bodies first to avoid their release listeners triggering remove
-            // during iteration of the children list in super.release() causing ConcurrentModificationException.
-            this@Universe.toList().forEach { it.release() }
-            super.release()
-        }
+    }
+    val root = scene.addGroup("Root") {
+        transform = TrsTransformD() // use double precision transform
     }
 
     var name by scene::name
@@ -45,13 +40,18 @@ open class Universe : AbstractMutableSet<CelestialBody>() {
             value?.seek(time)
         }
 
+    fun update() {
+        dynModel?.seek(time)
+        forEach { it.update() }
+    }
+
     override fun add(element: CelestialBody): Boolean {
         if (element is SingletonCelestialBody<*, *>) {
             singletonsCelestialBodies[element.companion]?.also(::remove)
             singletonsCelestialBodies[element.companion] = element
         }
         if (!celestialBodies.add(element)) return false
-        scene += element
+        root += element
         dynModel?.addDynModelFor(element)
         val releaseListener = ReleasableImpl { remove(element) }
         celestialBodyReleaseListeners[element] = releaseListener
@@ -61,7 +61,7 @@ open class Universe : AbstractMutableSet<CelestialBody>() {
 
     override fun remove(element: CelestialBody): Boolean {
         if (celestialBodies.remove(element)) {
-            scene -= element
+            root -= element
             dynModel?.releaseDynModelFor(element)
             if (element is SingletonCelestialBody<*, *>)
                 singletonsCelestialBodies -= element.companion
@@ -75,8 +75,13 @@ open class Universe : AbstractMutableSet<CelestialBody>() {
     operator fun <CP : SingletonCelestialBody.CompanionObj<CLS>, CLS : SingletonCelestialBody<CLS, CP>> get(companion: CP): CLS? =
         singletonsCelestialBodies[companion]?.let { it as CLS }
 
-    private fun update(updateEvent: RenderPass.UpdateEvent) {
-        dynModel?.seek(time)
+    override fun release() {
+        removeDependingReleasable(scene) // avoid infinite recursion
+        // Release (thus remove) all celestial bodies first to avoid their release listeners triggering remove
+        // during iteration of the children list in super.release() causing ConcurrentModificationException.
+        celestialBodies.toList().forEach { it.release() }
+        scene.release()
+        super.release()
     }
 
     override val size by celestialBodies::size

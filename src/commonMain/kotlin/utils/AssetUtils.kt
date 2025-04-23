@@ -2,15 +2,7 @@ package utils
 
 import de.fabmax.kool.AssetLoader
 import de.fabmax.kool.math.Vec2i
-import de.fabmax.kool.pipeline.BufferedImageData2d
-import de.fabmax.kool.pipeline.FilterMethod
-import de.fabmax.kool.pipeline.ImageDataCube
-import de.fabmax.kool.pipeline.MipMapping
-import de.fabmax.kool.pipeline.SamplerSettings
-import de.fabmax.kool.pipeline.SingleColorTexture
-import de.fabmax.kool.pipeline.TexFormat
-import de.fabmax.kool.pipeline.TextureCube
-import de.fabmax.kool.pipeline.toTexture
+import de.fabmax.kool.pipeline.*
 import de.fabmax.kool.util.Color
 
 class SingleColorTextureCube(color: Color) : TextureCube(

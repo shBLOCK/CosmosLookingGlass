@@ -17,8 +17,8 @@ internal lateinit var _EX: RenderBackendEx
 
 actual inline val RenderBackend.ex: RenderBackendEx get() = _EX
 
-actual fun KoolContext.initRenderBackendEx() {
-    _EX = when (val backend = backend) {
+actual fun RenderBackendEx.Companion.init(ctx: KoolContext) {
+    _EX = when (val backend = ctx.backend) {
         is RenderBackendGlImpl -> RenderBackendExOpenGL(backend)
         is RenderBackendVk -> TODO()
         else -> error("Unknown render backend")

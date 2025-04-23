@@ -9,7 +9,8 @@ sealed interface IntFractTime {
     @JvmInline
     value class J2000(override val value: IntFract) : IntFractTime {
         companion object {
-            const val CENTURY = 100 * 365.25 * 24 * 3600
+            const val YEAR = 365.25 * 24 * 3600
+            const val CENTURY = 100 * YEAR
         }
 
         inline val centuries get() = value / CENTURY

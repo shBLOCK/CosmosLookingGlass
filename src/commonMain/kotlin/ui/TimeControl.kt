@@ -11,175 +11,58 @@ import de.fabmax.kool.pipeline.CullMethod
 import de.fabmax.kool.scene.Mesh
 import de.fabmax.kool.scene.geometry.IndexedVertexList
 import de.fabmax.kool.scene.geometry.Usage
-import de.fabmax.kool.util.*
-import universe.CelestialBody
-import universe.Universe
-import universe.content.Earth
-import universe.content.Moon
-import universe.content.Sun
+import de.fabmax.kool.util.Color
+import de.fabmax.kool.util.MdColor
+import de.fabmax.kool.util.Time
 import utils.*
 import kotlin.math.abs
 import kotlin.math.log10
 import kotlin.math.pow
 import kotlin.math.withSign
 
-class MainUI(private val solarSystem: Universe) : BaseReleasable() {
-    private var time
-        get() = solarSystem.time
-        set(value) {
-            solarSystem.time = value
+class TimeControl(initialTime: IntFract) : Composable {
+    var time: IntFract = initialTime
+        private set(value) {
+            field = value
             utcTimeState.set(value.j2000.utc)
         }
+
+    private var speedSlider: SpeedSlider? = null // only exist after first UI compose
+
     private val utcTimeState = mutableStateOf(time.j2000.utc)
 
-    val cameraControl = MainCameraControl(solarSystem.scene.mainRenderPass.defaultView)
-        .apply {
-            solarSystem.scene.onUpdate {
-                //TODO: TEMP
-                val center = solarSystem[Earth]!!.dynModel!!.position()
-                targetParams.center.set(center)
-                params.center.set(center)
-
-                update()
-            }
-        }
-
-    private lateinit var timeControl: TimeControl
-
-    val cbToTrail = mutableMapOf<CelestialBody, Trail>()
-
-    private val trailManager = TrailManager().apply {
-        solarSystem.scene.onUpdate { update() }
-        solarSystem.forEach { body ->
-            trails += Trail(body).also {
-                solarSystem.scene += it.meshInstances[0]
-            }.also { cbToTrail[body] = it }
+    fun update() {
+        speedSlider?.run {
+            update()
+            time += value.value * Time.deltaT
         }
     }
 
-    init {
-        cbToTrail[solarSystem[Earth]!!]!!.stepSize /= 3
-        cbToTrail[solarSystem[Moon]!!]!!.stepSize /= 3
-        trailManager.trails.forEach {
-            it.meshInstances[0].ref = cbToTrail[solarSystem[Sun]!!]
-            it.meshInstances[0].alterRef = cbToTrail[solarSystem[Earth]!!]
-        }
-        cbToTrail[solarSystem[Moon]!!]!!.meshInstances[0].ref = cbToTrail[solarSystem[Earth]!!]
-    }
+    override fun UiScope.compose() {
+        Column {
+            modifier
+                .width(Grow.Std)
 
-    var test = 0
-
-    private fun getSizes() = Sizes.medium(
-        normalText = MsdfFont(MsdfFont.FONT_UI_DATA, sizePts = 15F),
-        largeText = MsdfFont(MsdfFont.FONT_UI_DATA, sizePts = 20F)
-    )
-
-    val hudSurface = UiSurface(name = "HudSurface").apply {
-        onUpdate { triggerUpdate() }
-        content = {
-            surface.sizes = getSizes()
-
-            viewport.modifier.layout(FreeLayout)
-
-            Button("Sun") {
-                val sun = solarSystem[Sun]!!
-
-
-//                solarSystem.scene.camera.projectViewport(
-//                    sun.toGlobalCoords(MutableVec3d()),
-//                    solarSystem.scene.mainRenderPass.viewport,
-//                    spos
-//                )
-                var sph = solarSystem.scene.camera.projectSphere(sun.toGlobalCoords(MutableVec3d()), sun.outlineRadius)
-                val r = sph.majorRadius * solarSystem.scene.mainRenderPass.viewport.height / 2.0
-                var spos = sph.center * (solarSystem.scene.mainRenderPass.viewport.height / 2.0)
-                spos = Vec2d(spos.x, -spos.y)
-                spos += Vec2d(solarSystem.scene.mainRenderPass.viewport.width.toDouble(), solarSystem.scene.mainRenderPass.viewport.height.toDouble()) / 2.0
+            val timeText = utcTimeState.use().feasibleInstant?.toString()
+                ?: "UTC+${utcTimeState.value.value}"
+            Text(timeText) {
                 modifier
-                    .free(spos, AlignmentX.Center, AlignmentY.Center)
-                    .size(300.dp, 300.dp)
-                    .background(UiRenderer {
-                        with(it) {
-                            getUiPrimitives(0).localCircleBorder(150.dp.px, 150.dp.px, r.toFloat(), 3F, Color.GREEN)
-                        }
-                    })
-                    .isBlocking(false)
+                    .font(sizes.largeText)
+                    .alignX(AlignmentX.Center)
             }
 
-//            for (pl in listOf<CelestialBody>(solarSystem.earth, solarSystem.mercury, solarSystem.jupiter).shuffled()) {
-//                val pos = pl.toGlobalCoords(MutableVec3d())
-//                if (solarSystem.camera.dataD.globalLookDir dot (pos - solarSystem.camera.dataD.globalPos) <= 0.0) continue
-//                Button("${pl.name} Test ${test++}", scopeName = pl.name) {
-//                    val spos = MutableVec3d()
-//                        .also {
-//                            solarSystem.camera.projectViewport(
-//                                pos,
-//                                solarSystem.mainRenderPass.viewport,
-//                                it
-//                            )
-//                        }
-//                    modifier.free(spos.xy, AlignmentX.Center, AlignmentY.Center)
-//                }
-//            }
-        }
-    }
-
-    val hudUiSurface = UiSurface(name = "HudUiSurface").apply {
-        content = {
-            surface.sizes = getSizes()
-
-            Column {
+            speedSlider = uiNode.createChild("TimeControl/SpeedSlider", SpeedSlider::class, ::SpeedSlider).apply {
+                setup()
                 modifier
-                    .alignY(AlignmentY.Bottom)
-                    .width(Grow.Std)
-
-                val timeText = utcTimeState.use().feasibleInstant?.toString()
-                    ?: "UTC+${utcTimeState.value.value}"
-                Text(timeText) {
-                    modifier
-                        .font(sizes.largeText)
-                        .alignX(AlignmentX.Center)
-                }
-
-                timeControl = uiNode.createChild("TimeControl", TimeControl::class, ::TimeControl).apply {
-                    setup()
-                    modifier
-                        .alignX(AlignmentX.Center)
-                        .size(1000.dp, 50.dp)
-                        .background(RectBackground(MdColor.GREY.withAlpha(0.3F)))
-                }
+                    .alignX(AlignmentX.Center)
+                    .size(1000.dp, 50.dp)
+                    .background(RectBackground(MdColor.GREY.withAlpha(0.3F)))
             }
         }
     }
 
-    val scene = UiScene {
-        this += hudSurface
-        this += hudUiSurface
-    }
-
-    private inner class TrailManager {
-        val trails = mutableListOf<Trail>()
-
-        fun update() {
-            trails.forEach {
-                it.currentTime = solarSystem.time
-                it.endTime = solarSystem.time
-                it.startTime = max(IntFract.ZERO, solarSystem.time - 100 * 365.25 * 24 * 3600)
-//                it.startTime = max(IntFract.ZERO, solarSystem.time - 1 * 365.25 * 24 * 3600)
-//                it.startTime = it.endTime - IntFract(3600L * 24 * 365 * 100)
-//                it.startTime = it.endTime - IntFract(3600L * 24 * 365)
-//                it.meshInstances[0].refMix = sin(Time.gameTime) * .5 + .5
-            }
-            trails.forEach { it.update() }
-        }
-    }
-
-    private inner class TimeControl(parent: UiNode?, surface: UiSurface) : SlottedReboundSliderNode(parent, surface) {
+    inner class SpeedSlider(parent: UiNode?, surface: UiSurface) : SlottedReboundSliderNode(parent, surface) {
         init {
-            solarSystem.scene.onUpdate {
-                time += value.value * Time.deltaT
-            }
-
             val TO_ONE = 0.2
             posToValue = FwdInvFunction(
                 forward = {

@@ -74,8 +74,6 @@ class SolarSystemKeplerModel3000BC3000AD : SolarSystemKeplerModelBase() {
     //    override val moonPos: DynModel.Position<*> = object : DynModelBase<>(), DynModel.Position<*> { // TODO
 //        override fun position() = earthPos.position() + Vec3d(384400e3, 0.0, 0.0)
 //    }
-
-    override fun copy() = SolarSystemKeplerModel3000BC3000AD()
 }
 
 /**
