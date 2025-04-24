@@ -15,9 +15,13 @@ import utils.ReleasableImpl
 open class Universe : MutableSet<CelestialBody>, MutableCollectionMixin<CelestialBody>, BaseReleasable() {
     val scene = object : Scene("Universe") {
         init {
-            addDependingReleasable(this@Universe)
             mainRenderPass.isDoublePrecision = true
             mainRenderPass.depthMode = DepthMode.Legacy
+        }
+
+        override fun release() {
+            this@Universe._release()
+            super.release()
         }
     }
     val root = scene.addGroup("Root") {
@@ -76,11 +80,14 @@ open class Universe : MutableSet<CelestialBody>, MutableCollectionMixin<Celestia
     operator fun <CP : SingletonCelestialBody.CompanionObj<CLS>, CLS : SingletonCelestialBody<CLS, CP>> get(companion: CP): CLS? =
         singletonsCelestialBodies[companion]?.let { it as CLS }
 
-    override fun release() {
-        removeDependingReleasable(scene) // avoid infinite recursion
+    private fun _release() {
         // Release (thus remove) all celestial bodies first to avoid their release listeners triggering remove
         // during iteration of the children list in super.release() causing ConcurrentModificationException.
         celestialBodies.toList().forEach { it.release() }
+    }
+
+    override fun release() {
+        _release()
         scene.release()
         super.release()
     }
