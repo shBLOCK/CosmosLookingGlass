@@ -225,9 +225,17 @@ class MainCameraControl(val view: RenderPass.View) : BaseReleasable(), InputStac
 
         fun apply() {
             if (halfFov.rad <= MIN_HALF_FOV_RAD) {
-                if (camera !is OrthographicCamera) camera = OrthographicCamera()
+                if (camera !is OrthographicCamera) {
+                    camera.parent?.removeNode(camera)
+                    camera.release()
+                    camera = OrthographicCamera()
+                }
             } else {
-                if (camera !is PerspectiveCamera) camera = PerspectiveCamera()
+                if (camera !is PerspectiveCamera) {
+                    camera.parent?.removeNode(camera)
+                    camera.release()
+                    camera = PerspectiveCamera()
+                }
             }
 
             camera.up.set(up)

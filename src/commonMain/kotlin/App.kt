@@ -130,6 +130,8 @@ class App() {
      * We do most of our app logic here for a predictable update order.
      */
     fun update() {
+        universe.resetGlobalTransformHackForFloatPrecision()
+
         timeControl.update()
         universe.time = time
 
@@ -140,6 +142,8 @@ class App() {
         trailManager.update(time)
 
         hudSurface.triggerUpdate() // always recompose HUD
+
+        universe.setGlobalTransformHackForFloatPrecision()
     }
 
     internal fun launch() {

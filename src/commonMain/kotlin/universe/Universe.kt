@@ -1,5 +1,6 @@
 package universe
 
+import de.fabmax.kool.math.toVec3d
 import de.fabmax.kool.pipeline.DepthMode
 import de.fabmax.kool.scene.Scene
 import de.fabmax.kool.scene.TrsTransformD
@@ -82,6 +83,20 @@ open class Universe : MutableSet<CelestialBody>, MutableCollectionMixin<Celestia
         celestialBodies.toList().forEach { it.release() }
         scene.release()
         super.release()
+    }
+
+    /**
+     * Apply a global translation to keep the camera at the origin to avoid float precision problems on GPU side.
+     */
+    fun setGlobalTransformHackForFloatPrecision() {
+        if (scene.camera.parent != root)
+            root += scene.camera
+        root.transform.setIdentity().scale(1.0).translate(scene.camera.position.toVec3d() * -1.0)
+    }
+
+    fun resetGlobalTransformHackForFloatPrecision() {
+        root.transform.setIdentity()
+        root.updateModelMatRecursive()
     }
 
     override val size by celestialBodies::size
