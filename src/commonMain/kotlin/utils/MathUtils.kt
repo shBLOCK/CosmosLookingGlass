@@ -26,38 +26,6 @@ fun MutableVec3d.expDecaySnapping(target: Vec3d, decay: Double, deltaT: Float = 
     return this
 }
 
-fun slerpShortest(quatA: QuatD, quatB: QuatD, f: Double, result: MutableQuatD = MutableQuatD()): MutableQuatD {
-    // copied from kool TODO: verify if this actually does slerp shortest
-    val qa = MutableQuatD()
-    val qb = MutableQuatD()
-    val qc = MutableQuatD()
-
-    quatA.normed(qa)
-    quatB.normed(qb)
-
-    val t = f.clamp(0.0, 1.0)
-
-    var dot = qa.dot(qb).clamp(-1.0, 1.0)
-    if (dot < 0.0) {
-        qa.mul(-1.0)
-        dot = -dot
-    }
-
-    if (dot > (1.0 - 1e-10)) {
-        qb.subtract(qa, result).mul(t).add(qa).norm()
-    } else {
-        val theta0 = acos(dot)
-        val theta = theta0 * t
-
-        qa.mul(-dot, qc).add(qb).norm()
-
-        qa.mul(cos(theta))
-        qc.mul(sin(theta))
-        result.set(qa).add(qc)
-    }
-    return result
-}
-
 val Int.nextPowerOfTwo get() = if (this and (this - 1) == 0) this else 1 shl (32 - countLeadingZeroBits())
 val Int.prevPowerOfTwo get() = if (this and (this - 1) == 0) this else 1 shl (32 - countLeadingZeroBits() - 1)
 

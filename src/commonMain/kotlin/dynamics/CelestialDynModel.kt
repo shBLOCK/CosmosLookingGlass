@@ -7,7 +7,6 @@ import de.fabmax.kool.math.MutableVec3d
 import de.fabmax.kool.math.QuatD
 import de.fabmax.kool.math.Vec3d
 import utils.IntFract
-import utils.slerpShortest
 
 interface CelestialDynModel : DynModel.Position, DynModel.Orientation {
     open class Composed(
@@ -56,7 +55,7 @@ interface CelestialDynModel : DynModel.Position, DynModel.Orientation {
         override fun orientation(result: MutableQuatD): MutableQuatD {
             a.orientation(tmpQuatDa)
             b.orientation(tmpQuatDb)
-            return slerpShortest(tmpQuatDa, tmpQuatDb, t, result)
+            return tmpQuatDa.mix(tmpQuatDb, t, result)
         }
     }
 
