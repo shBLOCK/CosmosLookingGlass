@@ -32,7 +32,7 @@ class TrailManager {
         mainTrails.forEach { it.instance.update() }
     }
 
-    data class MainTrail(
+    class MainTrail(
         val celestialBody: CelestialBody,
         val revolution: IntFract,
         val defaultRef: MainTrail?
@@ -44,6 +44,7 @@ class TrailManager {
         var endTime by instance::endTime.combinedWith(data::endTime)
         var currentTime by instance::currentTime
         var visible by instance::isVisible
+        var stepSize by data::stepSize
     }
 
     operator fun plusAssign(mainTrail: MainTrail) {

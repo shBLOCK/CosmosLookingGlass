@@ -55,9 +55,12 @@ class App() {
         val sun = TrailManager.MainTrail(universe[Sun]!!, IntFract(SolarSystemConsts.EARTH_REVOLUTION), null)
             .also { this += it }
         val earth = TrailManager.MainTrail(universe[Earth]!!, IntFract(SolarSystemConsts.EARTH_REVOLUTION), sun)
+            .apply { stepSize = 3600 * 4 }
             .also { this += it }
         this += TrailManager.MainTrail(universe[Moon]!!, IntFract(SolarSystemConsts.MOON_REVOLUTION), earth)
+            .apply { stepSize = 3600 * 4 }
         this += TrailManager.MainTrail(universe[Mercury]!!, IntFract(SolarSystemConsts.MERCURY_REVOLUTION), sun)
+            .apply { stepSize = 3600 * 8 }
         this += TrailManager.MainTrail(universe[Venus]!!, IntFract(SolarSystemConsts.VENUS_REVOLUTION), sun)
         this += TrailManager.MainTrail(universe[Mars]!!, IntFract(SolarSystemConsts.MARS_REVOLUTION), sun)
         this += TrailManager.MainTrail(universe[Jupiter]!!, IntFract(SolarSystemConsts.JUPITER_REVOLUTION), sun)
