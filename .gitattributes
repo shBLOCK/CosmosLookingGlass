@@ -1,0 +1,1 @@
+assets/raw/textures/misc/starmap_2020_16k.exr filter=lfs diff=lfs merge=lfs -binary

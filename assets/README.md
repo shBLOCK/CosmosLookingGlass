@@ -16,3 +16,4 @@ All assets are "deployed" by the `deployAssets` gradle task:
 - [Planetary Texture Map Sources 1.pdf](Planetary%20Texture%20Map%20Sources%201.pdf): [ProximaCc YouTube](https://www.youtube.com/watch?v=OEmpYnjuFVc)
 - [Planetary Texture Map Sources 2.pdf](Planetary%20Texture%20Map%20Sources%202.pdf): [ProximaCc YouTube](https://www.youtube.com/watch?v=rLBfHBFfQfo)
 - Celestial body textures: see [this markdown](raw/textures/celestial_body/README.md)
+- [starmap_2020_16k.exr](raw/textures/misc/starmap_2020_16k.exr): https://svs.gsfc.nasa.gov/4851/

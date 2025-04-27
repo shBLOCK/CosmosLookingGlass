@@ -1,20 +1,23 @@
+import de.fabmax.kool.Assets
 import de.fabmax.kool.KoolSystem
 import de.fabmax.kool.math.MutableVec3d
 import de.fabmax.kool.math.Vec2d
-import de.fabmax.kool.math.Vec3d
-import de.fabmax.kool.math.deg
+import de.fabmax.kool.modules.ksl.blocks.ColorSpaceConversion
 import de.fabmax.kool.modules.ui2.*
+import de.fabmax.kool.scene.Skybox
 import de.fabmax.kool.util.Color
 import de.fabmax.kool.util.DebugOverlay
 import de.fabmax.kool.util.MsdfFont
 import de.fabmax.kool.util.debugOverlay
 import dynamics.SolarSystemKeplerModel3000BC3000AD
 import dynamics.UniverseDynModelCollection
-import dynamics.transformed
+import kotlinx.coroutines.launch
 import ui.*
 import universe.Universe
 import universe.content.*
 import utils.IntFract
+import utils.addDebugAxisIndicator
+import utils.loadTextureCube
 import utils.projectSphere
 
 class App() {
@@ -34,6 +37,15 @@ class App() {
         dynModel = UniverseDynModelCollection(
             SolarSystemKeplerModel3000BC3000AD()
         )
+
+        Assets.launch {
+            Assets.defaultLoader.loadTextureCube("textures/misc/background_starmap.png")
+                .onSuccess {
+                    root += Skybox.cube(it, 1F, ColorSpaceConversion.AsIs, scene.depthMode)
+                }
+        }
+
+        root.addDebugAxisIndicator(1e11)
     }
     val timeControl = TimeControl(IntFract(0))
     val time by timeControl::time

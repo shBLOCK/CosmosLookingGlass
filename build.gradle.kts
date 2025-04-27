@@ -1,5 +1,6 @@
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
+import org.jetbrains.kotlin.gradle.internal.ensureParentDirsCreated
 import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet
 import org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalDistributionDsl
 import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsPlugin.Companion.kotlinNodeJsEnvSpec
@@ -237,6 +238,28 @@ val generateFonts by tasks.registering {
     }
 }
 
+fun ExecSpec.prepFileDir(file: String) = Unit.also {
+    workingDir.resolve(file).ensureParentDirsCreated()
+}
+
+val processImgs by tasks.registering {
+    group = "assets"
+    doLast {
+        exec {
+            workingDir(assetsRoot)
+            executable("${assetsRoot}/tools/bin/magick.exe")
+            args(
+                "raw/textures/misc/starmap_2020_16k.exr",
+                "-set", "colorspace", "RGB",
+                "-modulate", 1000,
+                "-colorspace", "sRGB",
+                "-depth", 8,
+                "tmp/textures/misc/background_starmap.png".also { prepFileDir(it) }
+            )
+        }
+    }
+}
+
 val generateCubemaps by tasks.registering {
     group = "assets"
     doLast {
@@ -246,23 +269,28 @@ val generateCubemaps by tasks.registering {
             executable("${assetsRoot}/tools/bin/hatch.exe")
             args("run", "python", "src/cubemapper.py")
             args(
-                "--input", "../raw/textures/${input}",
-                "--output", "../generated/textures/${output}",
-                "--size", size
+                "--input", "${assetsRoot}/${input}",
+                "--output", "${assetsRoot}/${output}",
+                "--size", size,
             )
         }
 
+        fun gen_r2g(input: String, output: String, size: Int) =
+            gen("raw/textures/${input}", "generated/textures/${output}", size)
+
         val SIZE = 2048
-        gen("celestial_body/earth/ppe_color_10k.jpg", "celestial_body/earth/color.png", SIZE)
-        gen("celestial_body/jupiter/ppe_color_6k.jpg", "celestial_body/jupiter/color.png", SIZE)
-        gen("celestial_body/mars/ppe_color_12k.jpg", "celestial_body/mars/color.png", SIZE)
-        gen("celestial_body/mercury/ppe_color_1k.jpg", "celestial_body/mercury/color.png", SIZE)
-        gen("celestial_body/moon/ppe_color_4k.jpg", "celestial_body/moon/color.png", SIZE)
-        gen("celestial_body/neptune/ppe_color_1k.jpg", "celestial_body/neptune/color.png", SIZE)
-        gen("celestial_body/saturn/ppe_color_2k.jpg", "celestial_body/saturn/color.png", SIZE)
-        gen("celestial_body/sun/ppe_color_1k.jpg", "celestial_body/sun/color.png", SIZE)
-        gen("celestial_body/uranus/ppe_color_1k.jpg", "celestial_body/uranus/color.png", SIZE)
-        gen("celestial_body/venus/ppe_color_2k.jpg", "celestial_body/venus/color.png", SIZE)
+        gen_r2g("celestial_body/earth/ppe_color_10k.jpg", "celestial_body/earth/color.png", SIZE)
+        gen_r2g("celestial_body/jupiter/ppe_color_6k.jpg", "celestial_body/jupiter/color.png", SIZE)
+        gen_r2g("celestial_body/mars/ppe_color_12k.jpg", "celestial_body/mars/color.png", SIZE)
+        gen_r2g("celestial_body/mercury/ppe_color_1k.jpg", "celestial_body/mercury/color.png", SIZE)
+        gen_r2g("celestial_body/moon/ppe_color_4k.jpg", "celestial_body/moon/color.png", SIZE)
+        gen_r2g("celestial_body/neptune/ppe_color_1k.jpg", "celestial_body/neptune/color.png", SIZE)
+        gen_r2g("celestial_body/saturn/ppe_color_2k.jpg", "celestial_body/saturn/color.png", SIZE)
+        gen_r2g("celestial_body/sun/ppe_color_1k.jpg", "celestial_body/sun/color.png", SIZE)
+        gen_r2g("celestial_body/uranus/ppe_color_1k.jpg", "celestial_body/uranus/color.png", SIZE)
+        gen_r2g("celestial_body/venus/ppe_color_2k.jpg", "celestial_body/venus/color.png", SIZE)
+
+        gen("tmp/textures/misc/background_starmap.png", "generated/textures/misc/background_starmap.png", 2048)
     }
 }
 
@@ -273,6 +301,7 @@ val generateAssetsSetup by tasks.registering {
             throw GradleException("processAssets task only works on windows.")
 
         // clean
+        delete("${rootDir}/assets/tmp")
         delete("${rootDir}/assets/generated")
         mkdir("${assetsRoot}/generated")
     }
@@ -283,9 +312,11 @@ val generateAssets by tasks.registering {
     group = "assets"
     val genTasks = arrayOf(
         generateFonts,
+        processImgs,
         generateCubemaps
     )
     dependsOn(generateAssetsSetup, *genTasks)
+    generateCubemaps.get().mustRunAfter(processImgs)
     genTasks.forEach { it.get().mustRunAfter(generateAssetsSetup) }
 }
 // endregion
