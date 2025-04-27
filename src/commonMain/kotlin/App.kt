@@ -33,10 +33,6 @@ class App() {
         this += Neptune()
         dynModel = UniverseDynModelCollection(
             SolarSystemKeplerModel3000BC3000AD()
-                .transformed { time, position, orientation -> // to ICRF
-                    position.rotate(23.43928.deg, Vec3d.X_AXIS)
-                    orientation.rotate(23.43928.deg, Vec3d.X_AXIS)
-                }
         )
     }
     val timeControl = TimeControl(IntFract(0))

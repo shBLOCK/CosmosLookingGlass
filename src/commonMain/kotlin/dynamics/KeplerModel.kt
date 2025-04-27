@@ -17,7 +17,7 @@ import kotlin.math.*
  * lp: longitude of perihelion
  * lan: longitude of the ascending node
  *
- * The output is in the J2000 ecliptic plane reference frame, with the x-axis aligned toward the equinox.
+ * The output is in the ICRF reference frame.
  */
 @Suppress("LocalVariableName", "PrivatePropertyName")
 class KeplerModel(
