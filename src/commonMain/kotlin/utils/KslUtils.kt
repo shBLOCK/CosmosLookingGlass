@@ -61,3 +61,30 @@ inline fun KslScopeBuilder.mod(x: KslScalarExpression<KslFloat1>, y: KslScalarEx
 @JvmName("imod")
 inline fun KslScopeBuilder.mod(x: KslScalarExpression<KslInt1>, y: KslScalarExpression<KslInt1>) =
     ((x % y) + y) % y
+
+inline fun KslScopeBuilder.cross2(a: KslExprFloat2, b: KslExprFloat2) = determinant(mat2Value(a, b))
+
+inline fun KslScopeBuilder.rotate90(v: KslExprFloat2) = float2Value(-v.y, v.x)
+
+fun KslShaderStage.functionQuatSlerp(name: String = "quatSlerp") = functionFloat4(name) {
+    val a = paramFloat4("a")
+    val b = paramFloat4("b")
+    val t = paramFloat1("t")
+    body {
+        val b = float4Var(b, "_b")
+
+        val d = float1Var(dot(a, b))
+        `if`(d `{` 0F.const) {
+            b set -b
+            d set -d
+        }
+
+        `if`(d `}` 0.9995F.const) {
+            `return`(normalize(mix(a, b, t)))
+        }
+
+        val theta = float1Var(acos(d) * t)
+        val q = float4Var(normalize(b - a * d))
+        normalize(a * cos(theta) + q * sin(theta))
+    }
+}

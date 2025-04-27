@@ -344,21 +344,7 @@ class TrailInstance(
             val iStep = interStageFloat1("iStep", KslInterStageInterpolation.Smooth)
 
             vertexStage {
-                val cross2 = functionFloat1("cross2") {
-                    val v1 = paramFloat2("v1")
-                    val v2 = paramFloat2("v2")
-                    body {
-                        v1.x * v2.y - v1.y * v2.x
-                    }
-                }
-
-                val rotate90 = functionFloat2("rotate90") {
-                    val v = paramFloat2("v")
-                    val d = paramFloat1("d")
-                    body {
-                        float2Value(v.y * d, -v.x * d)
-                    }
-                }
+                val quatSlerp = functionQuatSlerp("quatSlerp")
 
                 // Note: sampleMode: 0: current; -1: previous; 1: next
 
@@ -488,11 +474,12 @@ class TrailInstance(
                         r set normalize(r * float2Value(ar, 1f.const) * sign(projPos.w * projPrv.w))
 
                         // compute prev / next edge end points: rotate directions by 90°
-                        val p = float2Var(rotate90(r, shiftDir))
-                        val q = float2Var(rotate90(s, shiftDir))
+                        val p = float2Var(rotate90(r) * shiftDir)
+                        val q = float2Var(rotate90(s) * shiftDir)
 
                         // compute intersection points of prev and next edge
                         val x = float2Var((p + q) * 0.5F.const)
+
                         val rCrossS = float1Var(cross2(r, s))
                         `if`(abs(rCrossS) gt 0.001f.const) {
                             // lines are neither collinear nor parallel
