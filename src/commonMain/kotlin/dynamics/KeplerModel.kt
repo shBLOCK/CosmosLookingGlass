@@ -43,19 +43,13 @@ class KeplerModel(
 
     private val timeMin: Long = Long.MIN_VALUE,
     private val timeMax: Long = Long.MAX_VALUE
-) : DynModelBase(), DynModel.Position {
-    private var dirty = true
-    override fun seek(time: IntFract) {
-        super.seek(time)
-        dirty = true
-    }
-
-    private val lastResult = MutableVec3d()
+) : DynModel.Position, LazyDynModelBase() {
+    private val lazyResult = MutableVec3d()
 
     private val tmpVec2d = MutableVec2d()
 
     override fun position(result: MutableVec3d): MutableVec3d {
-        if (!dirty) return result.set(lastResult)
+        lazyPath { return result.set(lazyResult) }
 
         val timeClamped = IntFract(time.int.coerceIn(timeMin, timeMax), time.fract)
 
@@ -92,7 +86,7 @@ class KeplerModel(
         val zEcl = (sin_ap * sin_I) * hx +
             (cos_ap * sin_I) * hy
 
-        return result.set(xEcl, yEcl, zEcl).also { lastResult.set(it) }
+        return result.set(xEcl, yEcl, zEcl).also { lazyResult.set(it) }
     }
 
     companion object {

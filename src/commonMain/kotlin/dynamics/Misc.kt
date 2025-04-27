@@ -4,6 +4,37 @@ import de.fabmax.kool.math.MutableQuatD
 import de.fabmax.kool.math.MutableVec3d
 import universe.CelestialBody
 import utils.IntFract
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.InvocationKind
+import kotlin.contracts.contract
+
+abstract class LazyDynModelBase : DynModelBase() {
+    private var lastTime: IntFract? = null
+
+    @PublishedApi
+    internal var dirty = true
+
+    override fun seek(time: IntFract) {
+        super.seek(time)
+        if (time != lastTime) {
+            dirty = true
+            lastTime = time
+        }
+    }
+
+    fun markDirty() {
+        dirty = true
+    }
+
+    @OptIn(ExperimentalContracts::class)
+    protected inline fun lazyPath(block: () -> Unit) {
+        contract { callsInPlace(block, InvocationKind.AT_MOST_ONCE) }
+        if (!dirty) {
+            block()
+            dirty = false
+        }
+    }
+}
 
 class TransformedDynModel(
     private val transform: Transform,
