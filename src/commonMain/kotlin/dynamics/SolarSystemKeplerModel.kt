@@ -32,8 +32,8 @@ abstract class SolarSystemKeplerModelBase : SolarSystemOrientatedModel() {
     }
 }
 
-private const val BC3000 = (-50L * IntFractTime.J2000.CENTURY).toLong()
-private const val AD3000 = (10L * IntFractTime.J2000.CENTURY).toLong()
+private const val BC3000 = -50L * IntFractTime.J2000.CENTURY
+private const val AD3000 = 10L * IntFractTime.J2000.CENTURY
 
 class SolarSystemKeplerModel3000BC3000AD : SolarSystemKeplerModelBase() {
     //@formatter:off

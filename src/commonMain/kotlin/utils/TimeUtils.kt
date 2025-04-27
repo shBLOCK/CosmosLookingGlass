@@ -9,10 +9,14 @@ sealed interface IntFractTime {
     @JvmInline
     value class J2000(override val value: IntFract) : IntFractTime {
         companion object {
-            const val YEAR = 365.25 * 24 * 3600
-            const val CENTURY = 100 * YEAR
+            const val DAY = 24L * 3600L
+            /** 365.25 days */
+            const val YEAR = 31557600L
+            const val CENTURY = 100L * YEAR
         }
 
+        inline val days get() = value / DAY
+        inline val years get() = value / YEAR
         inline val centuries get() = value / CENTURY
 
         inline val utc get() = UTC(value + J2000_UTC_OFFSET)
