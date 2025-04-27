@@ -1,10 +1,8 @@
-import contextlib
 import itertools
 import math
 import operator
 import os
 import string
-import time
 from pathlib import Path
 
 import click
@@ -14,19 +12,13 @@ import numpy as np
 import tqdm
 from spatium import Vec2i
 
+from utils import timed_step
+
 gl = moderngl.create_context(require=460, standalone=True)
 print("GL_RENDERER:", gl.info["GL_RENDERER"])
 
 
-@contextlib.contextmanager
-def timed_step(name: str):
-    t = time.perf_counter()
-    print(name, end="")
-    yield
-    print(f" {time.perf_counter() - t:.2f}s")
-
-
-def make_shader(multisample_level: int, mode: str):
+def make_shader(multisample_level: int, sample_mode: str, orientation_mode: str):
     # language=glsl
     shader_src = \
         """
@@ -135,10 +127,19 @@ def make_shader(multisample_level: int, mode: str):
         }
 
         vec4 sampleEquirec(dvec3 dir) {
-            return _sampleEquirec(dvec2(
-            (atan2(dir.z, dir.x) + PI_D) / TAU_D,
-            (atan2(dir.y, length(dir.xz)) + (PI_D / 2)) / PI_D
-            ));
+            dvec2 uv;
+            #if $orientation_mode_is_opengl
+            uv = dvec2(
+            (atan2(dir.x, dir.z) + PI_D) / TAU_D,
+            (atan2(-dir.y, length(dir.xz)) + (PI_D / 2)) / PI_D
+            );
+            #elif $orientation_mode_is_map
+            uv = dvec2(
+            (atan2(dir.y, dir.x) + PI_D) / TAU_D,
+            (atan2(-dir.z, length(dir.yx)) + (PI_D / 2)) / PI_D
+            );
+            #endif
+            return _sampleEquirec(uv);
         }
 
         dvec3 cubeUV2Dir(dvec2 uv, int layer) {
@@ -180,7 +181,7 @@ def make_shader(multisample_level: int, mode: str):
         }
 
         vec4 mixSamples(in Sample samples[MULTISAMPLE_GRID][MULTISAMPLE_GRID]) {
-            #if $mode_is_color
+            #if $sample_mode_is_color
             dvec4 acc = dvec4(0);
             for (int x = 0; x < MULTISAMPLE_GRID; x++) {
                 for (int y = 0; y < MULTISAMPLE_GRID; y++) {
@@ -188,7 +189,7 @@ def make_shader(multisample_level: int, mode: str):
                 }
             }
             return vec4(acc / (MULTISAMPLE_GRID * MULTISAMPLE_GRID));
-            #elif $mode_is_normal_map
+            #elif $sample_mode_is_normal_map
             #endif
         }
 
@@ -208,12 +209,14 @@ def make_shader(multisample_level: int, mode: str):
             imageStore(uCubeMap, ivec3(iTexCoord, layer), mixSamples(samples));
         }
         """
-    if mode == "normal":
-        raise NotImplementedError("normal map mode")
+    if sample_mode == "normal_map":
+        raise NotImplementedError("sample_mode: normal_map")
     shader_src = string.Template(shader_src).substitute(
         multisample_level=multisample_level,
-        mode_is_color=int(mode == "color"),
-        mode_is_normal_map=int(mode == "normal_map")
+        sample_mode_is_color=int(sample_mode == "color"),
+        sample_mode_is_normal_map=int(sample_mode == "normal_map"),
+        orientation_mode_is_opengl=int(orientation_mode == "opengl"),
+        orientation_mode_is_map=int(orientation_mode == "map")
     )
     return gl.compute_shader(shader_src)
 
@@ -236,14 +239,16 @@ def run_compute(shader: moderngl.ComputeShader, size: int):
               help="Output cubemap image path, suffixes like '_neg_x' or '_pos_y' are appended to the the file name.")
 @click.option("--size", "cubemap_size", required=True, type=click.IntRange(1, 16384, clamp=True),
               help="Size of output cubemap.")
-@click.option("--mode", "mode", type=click.Choice(["color", "normal_map"]), default="color")
+@click.option("--sample-mode", "sample_mode", type=click.Choice(["color", "normal_map"]), default="color")
+@click.option("--orientation-mode", "orientation_mode", type=click.Choice(["opengl", "map"]), default="opengl")
 @click.option("--multisample", type=click.IntRange(-1, 100, clamp=True), default=-1,
               help="Multisample level to use, the multisample grid with be a square grid with width of (<this value> * 2 + 1). Use -1 to use automatically calculated level based on in/out texture size.")
 def main(
     input_path: os.PathLike[str],
     output_path: os.PathLike[str],
     cubemap_size: int,
-    mode: str,
+    sample_mode: str,
+    orientation_mode: str,
     multisample: int
 ):
     with timed_step("Loading equirec image..."):
@@ -259,12 +264,10 @@ def main(
 
     print(f"Multisample level: {multisample}")
 
-    with timed_step("Compiling shader..."):
-        shader = make_shader(multisample, mode)
-
     with timed_step("Setup compute shader..."):
-        cubemap = gl.texture_cube([cubemap_size] * 2, components=4)
+        shader = make_shader(multisample, sample_mode, orientation_mode)
 
+        cubemap = gl.texture_cube([cubemap_size] * 2, components=4)
         cubemap.bind_to_image(unit=0, read=False, write=True)
         shader["uCubeMap"] = 0
         equirec_buffer.bind_to_storage_buffer(binding=0)

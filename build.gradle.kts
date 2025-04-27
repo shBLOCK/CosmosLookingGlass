@@ -263,7 +263,7 @@ val processImgs by tasks.registering {
 val generateCubemaps by tasks.registering {
     group = "assets"
     doLast {
-        fun gen(input: String, output: String, size: Int) = exec {
+        fun gen(input: String, output: String, size: Int, orientation: String = "map") = exec {
             println("$input -> $output (size=$size)")
             workingDir("${assetsRoot}/tools")
             executable("${assetsRoot}/tools/bin/hatch.exe")
@@ -272,6 +272,7 @@ val generateCubemaps by tasks.registering {
                 "--input", "${assetsRoot}/${input}",
                 "--output", "${assetsRoot}/${output}",
                 "--size", size,
+                "--orientation-mode", orientation
             )
         }
 
