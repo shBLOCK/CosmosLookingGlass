@@ -3,6 +3,13 @@
 package utils
 
 import de.fabmax.kool.math.Vec2d
+import de.fabmax.kool.math.Vec3d
+import de.fabmax.kool.math.Vec3f
+import de.fabmax.kool.math.toVec3f
+import de.fabmax.kool.modules.ksl.KslUnlitShader
+import de.fabmax.kool.scene.Node
+import de.fabmax.kool.scene.addLineMesh
+import de.fabmax.kool.util.Color
 import de.fabmax.kool.util.Releasable
 import kotlin.reflect.KMutableProperty0
 import kotlin.reflect.KProperty
@@ -54,3 +61,24 @@ class CombinedProperty<T>(val primary: KMutableProperty0<T>, vararg val others: 
 }
 
 fun <T> KMutableProperty0<T>.combinedWith(vararg others: KMutableProperty0<T>) = CombinedProperty(this, *others)
+
+inline fun unreachable(): Nothing = error("unreachable")
+
+fun Node.addDebugAxisIndicator(length: Double) =
+    addLineMesh {
+        for (axis in arrayOf(Vec3d.X_AXIS, Vec3d.Y_AXIS, Vec3d.Z_AXIS)) {
+            addLine(
+                Vec3f.ZERO, (axis * length).toVec3f(),
+                when (axis) {
+                    Vec3d.X_AXIS -> Color.RED
+                    Vec3d.Y_AXIS -> Color.GREEN
+                    Vec3d.Z_AXIS -> Color.BLUE
+                    else -> unreachable()
+                }
+            )
+        }
+
+        shader = KslUnlitShader {
+            color { vertexColor() }
+        }
+    }
