@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="Statistic">
+    <option name="fileTypesIncluded" value="kt;py;kts;" />
     <option name="excludedDirectories">
       <list>
         <option value="$PROJECT_DIR$/.gradle" />
@@ -11,6 +12,8 @@
         <option value="$PROJECT_DIR$/kool" />
         <option value="$PROJECT_DIR$/kotlin-js-store" />
         <option value="$PROJECT_DIR$/webpack.config.d" />
+        <option value="$PROJECT_DIR$/assets/tools/.venv" />
+        <option value="$PROJECT_DIR$/assets/tools/AssetScripts.egg-info" />
       </list>
     </option>
   </component>
