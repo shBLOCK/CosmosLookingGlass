@@ -1,4 +1,4 @@
-rootProject.name = "SolarUtils"
+rootProject.name = "CosmosLookingGlass"
 
 includeBuild("kool") {
     dependencySubstitution {

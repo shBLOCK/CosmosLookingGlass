@@ -20,7 +20,7 @@
         }
     },
     "appid": "wx70e1c26b9845f0f6",
-    "projectname": "SolarUtils",
+    "projectname": "CosmosLookingGlass",
     "libVersion": "3.7.11",
     "compileType": "miniprogram",
     "srcMiniprogramRoot": "miniprogram/",

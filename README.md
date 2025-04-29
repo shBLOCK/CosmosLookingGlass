@@ -1,4 +1,4 @@
-# SolarUtils
+# Cosmos LookingGlass
 ### W.I.P
 
 # Developer Notes
