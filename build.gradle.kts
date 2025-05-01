@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
 import org.jetbrains.kotlin.gradle.internal.ensureParentDirsCreated
@@ -15,6 +17,8 @@ repositories {
     mavenCentral()
     maven("https://oss.sonatype.org/content/repositories/snapshots")
 }
+
+tasks.wrapper { distributionType = Wrapper.DistributionType.ALL }
 
 kotlin {
     // kotlin multiplatform (jvm + js) setup:
@@ -322,25 +326,37 @@ val generateAssets by tasks.registering {
 }
 // endregion
 
+fun _cleanMergedAndDeployedResources() {
+    delete("${rootDir}/assets/all")
+    delete(kotlin.sourceSets["jvmMain"].resourcesDir / "assets")
+    delete(kotlin.sourceSets["jsMain"].resourcesDir / "assets")
+}
+
 // region Asset Deploy
 val cleanMergedAndDeployedResources by tasks.registering {
     clean.dependsOn(this)
 
     doLast {
-        delete("${rootDir}/assets/all")
-        delete(kotlin.sourceSets["jvmMain"].resourcesDir / "assets")
-        delete(kotlin.sourceSets["jsMain"].resourcesDir / "assets")
+        _cleanMergedAndDeployedResources()
     }
 }
 
 val deployAssets by tasks.registering {
     group = "assets"
 
-    dependsOn(cleanMergedAndDeployedResources)
-    mustRunAfter(cleanMergedAndDeployedResources)
+    inputs.dir("${assetsRoot}/static/")
+    inputs.dir("${assetsRoot}/generated/")
+    outputs.dir("${assetsRoot}/all/")
+    outputs.dir(kotlin.sourceSets["jvmMain"].resourcesDir / "assets")
+    outputs.dir(kotlin.sourceSets["jsMain"].resourcesDir / "assets")
+
+    doFirst {
+        _cleanMergedAndDeployedResources()
+    }
 
     // merge
     doLast {
+        println("DEPLOY")
         copy {
             from("${assetsRoot}/static/")
             into("${assetsRoot}/all/")
