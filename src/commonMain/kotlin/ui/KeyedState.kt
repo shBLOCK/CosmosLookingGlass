@@ -53,7 +53,7 @@ class KeyedStateStore {
         internal fun <T : Any> recallValue(type: KClass<T>): T {
             val value = values[pos++]
             return type.safeCast(value)
-                ?: throw IllegalStateException("The remembered value <$value> at index ${pos - 1} doesn't have the expected type <${type.qualifiedName}>.")
+                ?: throw IllegalStateException("The remembered value <$value> at index ${pos - 1} doesn't have the expected type <${type.simpleName}>.")
         }
 
         fun rewind() {

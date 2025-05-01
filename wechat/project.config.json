@@ -17,7 +17,18 @@
             "ignore": [],
             "disablePlugins": [],
             "outputPath": ""
-        }
+        },
+        "compileWorklet": false,
+        "uglifyFileName": false,
+        "uploadWithSourceMap": true,
+        "packNpmManually": false,
+        "packNpmRelationList": [],
+        "localPlugins": false,
+        "disableUseStrict": false,
+        "useCompilerPlugins": false,
+        "condition": false,
+        "swc": false,
+        "disableSWC": true
     },
     "appid": "wx70e1c26b9845f0f6",
     "projectname": "CosmosLookingGlass",
@@ -37,5 +48,6 @@
         "tabIndent": "insertSpaces",
         "tabSize": 4
     },
-    "condition": {}
+    "condition": {},
+    "simulatorPluginLibVersion": {}
 }

@@ -38,6 +38,7 @@ kotlin {
             }
             commonWebpackConfig {
                 outputFileName = "index.js"
+                sourceMaps = true
             }
             testTask {
                 enabled = false
@@ -177,6 +178,10 @@ val jsWeChatMinify by tasks.registering(Exec::class) {
 
     val srcRoot = "${rootDir}/wechat/miniprogram/index/src"
 
+    fun File.KB() = "%.1fKB".format(length() / 1024.0)
+
+    doFirst { println("Source: ${file("${srcRoot}/index.js").KB()}") }
+
     executable = kotlinNodeJsEnvSpec.executable.get()
     args(
         "${rootDir}/build/js/node_modules/terser/bin/terser",
@@ -186,6 +191,8 @@ val jsWeChatMinify by tasks.registering(Exec::class) {
         "--timings",
         "--output", "${srcRoot}/index.min.js", "${srcRoot}/index.js"
     )
+
+    doLast { println("Result: ${file("${srcRoot}/index.min.js").KB()}") }
 
     doLast {
         Files.move(
@@ -356,7 +363,6 @@ val deployAssets by tasks.registering {
 
     // merge
     doLast {
-        println("DEPLOY")
         copy {
             from("${assetsRoot}/static/")
             into("${assetsRoot}/all/")

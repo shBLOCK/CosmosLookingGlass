@@ -3,6 +3,7 @@ package platform
 import de.fabmax.kool.KoolApplication
 import de.fabmax.kool.KoolConfigJs
 import de.fabmax.kool.pipeline.backend.webgpu.GPUPowerPreference
+import kotlinx.coroutines.Dispatchers
 import platform.wechat.WxAssetLoader
 
 private const val CANVAS_NAME = "glCanvas"
@@ -91,6 +92,10 @@ internal fun weChatMain() {
 
     js("document = documentObj")
     //endregion
+
+    // Force createDefaultDispatcher() to not choose a window-based dispatcher
+    js("window = undefined")
+    Dispatchers.Default
 
     //region window
     val windowObj = jsObj {
