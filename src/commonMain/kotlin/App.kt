@@ -1,24 +1,25 @@
 import de.fabmax.kool.Assets
 import de.fabmax.kool.KoolSystem
-import de.fabmax.kool.math.MutableVec3d
-import de.fabmax.kool.math.Vec2d
 import de.fabmax.kool.modules.ksl.blocks.ColorSpaceConversion
 import de.fabmax.kool.modules.ui2.*
 import de.fabmax.kool.scene.Skybox
-import de.fabmax.kool.util.Color
 import de.fabmax.kool.util.DebugOverlay
 import de.fabmax.kool.util.MsdfFont
 import de.fabmax.kool.util.debugOverlay
 import dynamics.SolarSystemKeplerModel3000BC3000AD
 import dynamics.UniverseDynModelCollection
 import kotlinx.coroutines.launch
-import ui.*
+import ui.FONT_UI_DATA
+import ui.MainCameraControl
+import ui.TimeControl
+import ui.TrailManager
+import ui.hud.HudViewport
+import ui.hud.UniverseCelestialBodyHudButtons
+import universe.SingletonCelestialBody
 import universe.Universe
 import universe.content.*
 import utils.IntFract
-import utils.addDebugAxisIndicator
 import utils.loadTextureCube
-import utils.projectSphere
 
 class App() {
     val koolCtx = KoolSystem.requireContext()
@@ -45,10 +46,20 @@ class App() {
                 }
         }
 
-        root.addDebugAxisIndicator(1e11)
+//        root.addDebugAxisIndicator(1e11)
     }
-    val timeControl = TimeControl(IntFract(0))
-    val time by timeControl::time
+
+    val cameraControl = MainCameraControl(universe.scene.mainRenderPass.defaultView)
+        .apply {
+            targetParams.halfSize = 24e7
+//            targetParams.halfSize = 10e5
+            universe.scene.onUpdate {
+//                //TODO: TEMP
+//                val center = universe[Earth]!!.dynModel!!.position()
+//                targetParams.center.set(center)
+//                params.center.set(center)
+            }
+        }
 
     val trailManager = TrailManager().apply {
         universe.root += mainTrailsRoot
@@ -69,53 +80,7 @@ class App() {
         this += TrailManager.MainTrail(universe[Neptune]!!, IntFract(SolarSystemConsts.NEPTUNE_REVOLUTION), sun)
     }
 
-    val cameraControl = MainCameraControl(universe.scene.mainRenderPass.defaultView)
-        .apply {
-//            targetParams.halfSize = 24e7
-            universe.scene.onUpdate {
-//                //TODO: TEMP
-//                val center = universe[Moon]!!.dynModel!!.position()
-//                targetParams.center.set(center)
-//                params.center.set(center)
-            }
-        }
-
-    val hudSurface = UiSurface(name = "HudSurface").apply {
-        content = {
-            surface.sizes = UI_SIZES
-
-            viewport.modifier.layout(FreeLayout)
-
-            Button("Sun") {
-                val sun = universe[Sun]!!
-
-
-//                solarSystem.scene.camera.projectViewport(
-//                    sun.toGlobalCoords(MutableVec3d()),
-//                    solarSystem.scene.mainRenderPass.viewport,
-//                    spos
-//                )
-                var sph = universe.scene.camera.projectSphere(sun.toGlobalCoords(MutableVec3d()), sun.outlineRadius)
-                val r = sph.majorRadius * universe.scene.mainRenderPass.viewport.height / 2.0
-                var spos = sph.center * (universe.scene.mainRenderPass.viewport.height / 2.0)
-                spos = Vec2d(spos.x, -spos.y)
-                spos += Vec2d(
-                    universe.scene.mainRenderPass.viewport.width.toDouble(),
-                    universe.scene.mainRenderPass.viewport.height.toDouble()
-                ) / 2.0
-                modifier
-                    .free(spos, AlignmentX.Center, AlignmentY.Center)
-                    .size(300.dp, 300.dp)
-                    .background(UiRenderer {
-                        with(it) {
-                            getUiPrimitives(0).localCircleBorder(150.dp.px, 150.dp.px, r.toFloat(), 3F, Color.GREEN)
-                        }
-                    })
-                    .isBlocking(false)
-            }
-        }
-    }
-
+    // region UI
     val hudUiSurface = UiSurface(name = "HudUiSurface").apply {
         content = {
             surface.sizes = UI_SIZES
@@ -129,6 +94,35 @@ class App() {
             }
         }
     }
+
+    val timeControl = TimeControl(IntFract(0))
+    val time by timeControl::time
+    // endregion
+
+    // region HUD
+    val hudSurface = UiSurface(name = "HudSurface").apply {
+        content = {
+            surface.sizes = UI_SIZES
+
+            HudViewport {
+                cameraControl.attachTo(this)
+                celestialBodyHudButtons()
+            }
+        }
+    }
+
+    val celestialBodyHudButtons = UniverseCelestialBodyHudButtons(universe).apply {
+        configurator = {
+            if (it is SingletonCelestialBody<*, *>) {
+                modifier.priority = when (it.companion) {
+                    Sun -> 2
+                    Earth -> 1
+                    else -> 0
+                }
+            }
+        }
+    }
+    // endregion
 
     val uiScene = UiScene {
         this += hudSurface

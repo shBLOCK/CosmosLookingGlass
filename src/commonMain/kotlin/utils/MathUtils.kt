@@ -1,12 +1,14 @@
-@file:Suppress("NOTHING_TO_INLINE")
+@file:Suppress("NOTHING_TO_INLINE", "OVERRIDE_BY_INLINE", "SortModifiers")
 
 package utils
 
 import de.fabmax.kool.math.*
+import de.fabmax.kool.pipeline.RenderPass
 import de.fabmax.kool.scene.Camera
 import de.fabmax.kool.scene.OrthographicCamera
 import de.fabmax.kool.scene.PerspectiveCamera
 import de.fabmax.kool.util.Time
+import de.fabmax.kool.util.Viewport
 import kotlin.math.*
 
 const val SPEED_OF_LIGHT = 299792458.0
@@ -39,20 +41,45 @@ fun MutableVec3d.rotate(angle: AngleD, axis: RayD) = this.apply {
     add(axis.origin)
 }
 
+inline fun sqr(x: Float) = x * x
+inline fun sqr(x: Double) = x * x
+
 fun mix(a: Float, b: Float, t: Float) = a + (b - a) * t
 fun mix(a: Double, b: Double, t: Double) = a + (b - a) * t
 
 interface SphereCameraProjectionResult {
     val center: Vec2d
+    val centerDistance: Double
     val majorRadius: Double
     val minorRadius: Double
     val area: Double
 }
 
+class ViewportSphereCameraProjectionResult(
+    val viewport: Viewport,
+    @PublishedApi internal val org: SphereCameraProjectionResult
+) : SphereCameraProjectionResult {
+    override val center
+        get() = MutableVec2d(org.center).apply {
+            y = -y
+            mul(viewport.height / 2.0)
+            x += viewport.width / 2.0
+            y += viewport.height / 2.0
+        }
+    inline override val centerDistance get() = org.centerDistance
+    inline override val majorRadius get() = org.majorRadius * (viewport.height / 2.0)
+    inline override val minorRadius get() = org.minorRadius * (viewport.height / 2.0)
+    inline override val area get() = org.area * sqr(viewport.height / 2.0)
+}
+
+inline fun SphereCameraProjectionResult.on(viewport: Viewport) =
+    ViewportSphereCameraProjectionResult(viewport, this)
+
 fun Camera.projectSphere(center: Vec3d, radius: Double) = when (this) {
     is OrthographicCamera -> {
         object : SphereCameraProjectionResult {
             override val center = MutableVec3d().also { project(center, it) }.xy
+            override val centerDistance = center dot dataD.globalLookDir.normed()
             override val majorRadius = radius / (abs((top - bottom).toDouble()) / 2.0)
             override val minorRadius = majorRadius
             override val area by lazy { PI * majorRadius * minorRadius }
@@ -69,6 +96,7 @@ fun Camera.projectSphere(center: Vec3d, radius: Double) = when (this) {
         val fle = 1.0 / tan(fovY.rad.toDouble() / 2.0)
         object : SphereCameraProjectionResult {
             override val center by lazy { o.xy * fle * o.z / (z2 - r2) }
+            override val centerDistance by lazy { sqrt(l2).withSign(o.z) }
             override val majorRadius by lazy { fle * sqrt(-r2 * (r2 - l2) / ((l2 - z2) * (r2 - z2) * (r2 - z2))) * o.xy.length() }
             override val minorRadius by lazy { fle * sqrt(-r2 * (r2 - l2) / ((l2 - z2) * (r2 - z2) * (r2 - l2))) * o.xy.length() }
             override val area by lazy { -PI * fle * fle * r2 * sqrt(abs((l2 - r2) / (r2 - z2))) / (r2 - z2) }
@@ -77,3 +105,6 @@ fun Camera.projectSphere(center: Vec3d, radius: Double) = when (this) {
 
     else -> throw NotImplementedError("$this")
 }
+
+inline fun Camera.projectSphere(sphere: Sphere) = projectSphere(sphere.center, sphere.radius)
+inline fun RenderPass.View.projectSphereViewport(sphere: Sphere) = camera.projectSphere(sphere).on(viewport)

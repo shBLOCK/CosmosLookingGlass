@@ -12,7 +12,7 @@ import utils.IntFract
 import utils.MutableCollectionMixin
 import utils.ReleasableImpl
 
-open class Universe : MutableSet<CelestialBody>, MutableCollectionMixin<CelestialBody>, BaseReleasable() {
+class Universe : MutableSet<CelestialBody>, MutableCollectionMixin<CelestialBody>, BaseReleasable() {
     val scene = object : Scene("Universe") {
         init {
             mainRenderPass.isDoublePrecision = true
@@ -29,10 +29,13 @@ open class Universe : MutableSet<CelestialBody>, MutableCollectionMixin<Celestia
     }
 
     var name by scene::name
+    inline val camera get() = scene.camera
+    inline val viewport get() = scene.mainRenderPass.viewport
+    inline val view get() = scene.mainRenderPass.defaultView
 
     var time = IntFract(0)
 
-    private val celestialBodies: MutableSet<CelestialBody> = mutableSetOf()
+    private val celestialBodies: LinkedHashSet<CelestialBody> = LinkedHashSet()
     private val singletonsCelestialBodies: MutableMap<SingletonCelestialBody.CompanionObj<*>, SingletonCelestialBody<*, *>> =
         mutableMapOf()
     private val celestialBodyReleaseListeners = mutableMapOf<CelestialBody, Releasable>()

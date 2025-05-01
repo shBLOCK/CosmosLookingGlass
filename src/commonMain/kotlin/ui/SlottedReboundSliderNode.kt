@@ -10,6 +10,7 @@ import kotlin.math.*
 
 open class SlottedReboundSliderNode(parent: UiNode?, surface: UiSurface) :
     UiNode(parent, surface), Draggable, Hoverable {
+
     override val modifier = UiModifier(surface)
 
     fun setup() {
