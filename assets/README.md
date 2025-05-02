@@ -11,6 +11,11 @@ All assets are "deployed" by the `deployAssets` gradle task:
 
 `deployAssets` is automatically ran when running / building.
 
+### Additional Information
+- Some assets live in the `<ASSET_ROOT>/cdn` folder.
+These are usually large/on-demand assets.
+On platforms with package size limitations (e.g. WeChat), assets in the `cdn` folder are uploaded separately.
+
 ### Credits
 - [msdf-atlas-gen.exe](tools/bin/msdf-atlas-gen.exe): https://github.com/Chlumsky/msdf-atlas-gen
 - [Planetary Texture Map Sources 1.pdf](Planetary%20Texture%20Map%20Sources%201.pdf): [ProximaCc YouTube](https://www.youtube.com/watch?v=OEmpYnjuFVc)

@@ -13,6 +13,7 @@ import de.fabmax.kool.pipeline.Texture2d
 import de.fabmax.kool.util.*
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import platform.platformImg
 import utils.FwdInvFunction
 
 object UiUtils {
@@ -95,7 +96,7 @@ enum class AlignmentXY(val x: AlignmentX, val y: AlignmentY, val anchor: Vec2d) 
 fun UiModifier.align(alignment: AlignmentXY) = align(alignment.x, alignment.y)
 
 private suspend fun loadMsdfFontData(path: String): Result<MsdfFontData> {
-    val img = Assets.loadImage2d("$path.png")
+    val img = Assets.loadImage2d(Assets.platformImg(path, lossless = true))
         .getOrElse { e ->
             return Result.failure(e)
         }

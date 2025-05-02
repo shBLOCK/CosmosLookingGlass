@@ -9,6 +9,7 @@ import de.fabmax.kool.util.debugOverlay
 import dynamics.SolarSystemKeplerModel3000BC3000AD
 import dynamics.UniverseDynModelCollection
 import kotlinx.coroutines.launch
+import platform.platformImg
 import ui.FONT_UI_DATA
 import ui.MainCameraControl
 import ui.TimeControl
@@ -40,7 +41,7 @@ class App() {
         )
 
         Assets.launch {
-            Assets.defaultLoader.loadTextureCube("textures/misc/background_starmap.png")
+            Assets.defaultLoader.loadTextureCube(Assets.platformImg("cdn/textures/misc/background_starmap"))
                 .onSuccess {
                     root += Skybox.cube(it, 1F, ColorSpaceConversion.AsIs, scene.depthMode)
                 }

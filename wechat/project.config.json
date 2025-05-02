@@ -28,18 +28,24 @@
         "useCompilerPlugins": false,
         "condition": false,
         "swc": false,
-        "disableSWC": true
+        "disableSWC": true,
+        "ignoreUploadUnusedFiles": false,
+        "ignoreDevUnusedFiles": false
     },
     "appid": "wx70e1c26b9845f0f6",
     "projectname": "CosmosLookingGlass",
-    "libVersion": "3.7.11",
+    "libVersion": "3.8.7",
     "compileType": "miniprogram",
     "srcMiniprogramRoot": "miniprogram/",
     "packOptions": {
         "ignore": [
             {
-                "value": "index/src/README.md",
-                "type": "file"
+                "type": "file",
+                "value": "index/src/README.md"
+            },
+            {
+                "type": "folder",
+                "value": "index/src/assets/cdn"
             }
         ],
         "include": []

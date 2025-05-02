@@ -3,17 +3,21 @@ package platform
 import de.fabmax.kool.KoolApplication
 import de.fabmax.kool.KoolConfigJs
 import de.fabmax.kool.pipeline.backend.webgpu.GPUPowerPreference
+import de.fabmax.kool.util.logD
+import de.fabmax.kool.util.logE
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.await
 import platform.wechat.WxAssetLoader
+import kotlin.js.Promise
 
 private const val CANVAS_NAME = "glCanvas"
-private const val ASSETS_ROOT = "src/assets"
 
 internal fun isWeChatEnv() = js("(typeof wx) === 'object'") as Boolean
 
 private fun launch() = KoolApplication(
     config = KoolConfigJs(
-        defaultAssetLoader = WxAssetLoader(ASSETS_ROOT),
+        defaultAssetLoader = WxAssetLoader("src/assets", "assets"),
         canvasName = CANVAS_NAME,
         isJsCanvasToWindowFitting = true,
         isGlobalKeyEventGrabbing = true, // bind event handlers on document
@@ -29,7 +33,39 @@ private object WxGlobals {
     var tmp2dCanvas: dynamic = null
 }
 
-var wxPage: dynamic = null
+@Suppress("MayBeConstant")
+object Wx {
+    val wx: dynamic = js("wx")
+    var page: dynamic = null
+        internal set
+
+    val CLOUD_ENV_ID = "cloud1-1gkoield09107fa5"
+    val CLOUD_STORAGE_ID = "636c-cloud1-1gkoield09107fa5-1357442844"
+
+    private val cloudInitPromise: Promise<*> by lazy {
+        val promise = wx.cloud.init(jsObj {
+            env = CLOUD_ENV_ID
+            traceUser = true
+        })
+        promise.then { logD { "wx.cloud.init() success" } }
+        promise.catch { e ->
+            logE { "wx.cloud.init() failed: $e" }
+            console.error("wx.cloud.init() failed", e)
+        }
+        promise
+    }
+
+    suspend fun cloud(): dynamic? {
+        try {
+            cloudInitPromise.await()
+            return wx.cloud
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Throwable) {
+            return null
+        }
+    }
+}
 
 internal fun weChatMain() {
     //region document
@@ -44,7 +80,7 @@ internal fun weChatMain() {
 
         createElement = fun(localName: String): dynamic {
             if (localName == "canvas") {
-                val canvas = js("wx").createOffscreenCanvas(jsObj { type = "2d" })
+                val canvas = Wx.wx.createOffscreenCanvas(jsObj { type = "2d" })
                 canvas.style = jsObj { }
                 return canvas
             }
@@ -74,19 +110,23 @@ internal fun weChatMain() {
             "Shift" -> shiftKey
             else -> false
         }
+
+        @JsName("preventDefault")
+        fun preventDefault() {
+        }
     }
     globalThis.KeyboardEvent = WxKeyboardEvent(jsObj { }).jsConstructor
     jsDefineProperty(
         documentObj,
         "onkeydown",
         { null.asDynamic() },
-        { js("wx").onKeyDown { event -> it(WxKeyboardEvent(event)) } }
+        { Wx.wx.onKeyDown { event -> it(WxKeyboardEvent(event)) } }
     )
     jsDefineProperty(
         documentObj,
         "onkeyup",
         { null.asDynamic() },
-        { js("wx").onKeyUp { event -> it(WxKeyboardEvent(event)) } }
+        { Wx.wx.onKeyUp { event -> it(WxKeyboardEvent(event)) } }
     )
     //endregion
 
@@ -110,24 +150,24 @@ internal fun weChatMain() {
             }
         }
 
-        devicePixelRatio = js("wx").getWindowInfo().pixelRatio
+        devicePixelRatio = Wx.wx.getWindowInfo().pixelRatio
     }
 
     console.log("window.devicePixelRatio: ${windowObj.devicePixelRatio}")
-    jsDefineProperty(windowObj, "innerWidth") { js("wx").getWindowInfo().windowWidth }
-    jsDefineProperty(windowObj, "innerHeight") { js("wx").getWindowInfo().windowHeight }
+    jsDefineProperty(windowObj, "innerWidth") { Wx.wx.getWindowInfo().windowWidth }
+    jsDefineProperty(windowObj, "innerHeight") { Wx.wx.getWindowInfo().windowHeight }
     console.log("window size: (${windowObj.innerWidth}, ${windowObj.innerHeight})")
     jsDefineProperty(
         windowObj,
         "onfocus",
         { null.asDynamic() },
-        { js("wx").onAppShow { _ -> it(jsObj { }) } }
+        { Wx.wx.onAppShow { _ -> it(jsObj { }) } }
     )
     jsDefineProperty(
         windowObj,
         "onblur",
         { null.asDynamic() },
-        { js("wx").onAppHide { _ -> it(jsObj { }) } }
+        { Wx.wx.onAppHide { _ -> it(jsObj { }) } }
     )
     js("window = windowObj")
     //endregion
@@ -142,35 +182,46 @@ internal fun weChatMain() {
 
     //region performance
     if (js("typeof performance") == "undefined") // overriding only if necessary: causes freeze in dev tool
-        globalThis.performance = js("wx").getPerformance()
+        globalThis.performance = Wx.wx.getPerformance()
     //endregion
 
-    //region touch event
+    //region mouse & touch event
+    class WxMouseEvent(
+        @JsName("buttons") val buttons: Int,
+        @JsName("clientX") val clientX: Double,
+        @JsName("clientY") val clientY: Double,
+        @JsName("movementX") val movementX: Double,
+        @JsName("movementY") val movementY: Double
+    ) {
+        constructor(pointerEvent: dynamic) : this(
+            buttons = pointerEvent.detail.buttons,
+            clientX = pointerEvent.detail.clientX,
+            clientY = pointerEvent.detail.clientY,
+            movementX = pointerEvent.detail.movementX,
+            movementY = pointerEvent.detail.movementY
+        )
+    }
+    globalThis.MouseEvent = WxMouseEvent(0, 0.0, 0.0, 0.0, 0.0).jsConstructor
+
     @Suppress("unused")
     class WxTouch(
         @JsName("identifier") val identifier: Int,
-        pPageX: Double,
-        pPageY: Double,
-        pClientX: Double,
-        pClientY: Double,
-        pCanvasX: Double,
-        pCanvasY: Double
+        @JsName("pageX") val pageX: Double,
+        @JsName("pageY") val pageY: Double,
+        @JsName("clientX") val clientX: Double,
+        @JsName("clientY") val clientY: Double,
+        @JsName("canvasX") val canvasX: Double,
+        @JsName("canvasY") val canvasY: Double
     ) {
         constructor(touch: dynamic) : this(
             identifier = touch.identifier.unsafeCast<Int>(),
-            pPageX = touch.pageX.unsafeCast<Double>(),
-            pPageY = touch.pageY.unsafeCast<Double>(),
-            pClientX = touch.clientX.unsafeCast<Double>(),
-            pClientY = touch.clientY.unsafeCast<Double>(),
-            pCanvasX = touch.x.unsafeCast<Double>(),
-            pCanvasY = touch.y.unsafeCast<Double>()
+            pageX = touch.pageX.unsafeCast<Double>(),
+            pageY = touch.pageY.unsafeCast<Double>(),
+            clientX = touch.clientX.unsafeCast<Double>(),
+            clientY = touch.clientY.unsafeCast<Double>(),
+            canvasX = touch.x.unsafeCast<Double>(),
+            canvasY = touch.y.unsafeCast<Double>()
         )
-
-        @JsName("clientX")
-        val clientX = pClientX
-
-        @JsName("clientY")
-        val clientY = pClientY
     }
     globalThis.Touch = WxTouch(0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0).jsConstructor
 
@@ -204,12 +255,32 @@ internal fun weChatMain() {
     }
     @Suppress("UnsafeCastFromDynamic")
     globalThis.TouchEvent = WxTouchEvent(null.asDynamic(), null.asDynamic()).jsConstructor
+
+    @Suppress("unused")
+    class WxWheelEvent(
+        @JsName("deltaX") val deltaX: Double,
+        @JsName("deltaY") val deltaY: Double,
+        @JsName("deltaZ") val deltaZ: Double,
+        @JsName("deltaMode") val deltaMode: Int
+    ) {
+        constructor(event: dynamic) : this(
+            event.detail.deltaX,
+            event.detail.deltaY,
+            event.detail.deltaZ,
+            event.detail.deltaMode
+        )
+
+        @JsName("preventDefault")
+        fun preventDefault() {
+        }
+    }
+    globalThis.WheelEvent = WxWheelEvent(0.0, 0.0, 0.0, 0).jsConstructor
     //endregion
 
-    globalThis.AudioContext = js("wx").createWebAudioContext().jsConstructor // TODO: untested
+    globalThis.AudioContext = Wx.wx.createWebAudioContext().jsConstructor // TODO: untested
 
-    js("wx").onAfterPageLoad { res ->
-        wxPage = res.page
+    Wx.wx.onAfterPageLoad { res ->
+        Wx.page = res.page
     }
 
     js("Page")(jsObj page@{
@@ -290,10 +361,17 @@ internal fun weChatMain() {
                     }
                 }
 
+                // only for canvas.onmousemove handler
+                canvas.getBoundingClientRect = { jsObj { left = 0.0; top = 0.0 } }
+
                 // FINALLY launch the application...
                 launch()
             }
         }
+
+        handlePointerMove = { event: dynamic -> WxGlobals.canvas.onmousemove(WxMouseEvent(event)) }
+        handlePointerDown = { event: dynamic -> WxGlobals.canvas.onmousedown(WxMouseEvent(event)) }
+        handlePointerUp = { event: dynamic -> WxGlobals.canvas.onmouseup(WxMouseEvent(event)) }
 
         _handleTouchStart = { _: dynamic -> } // dummy
         _handleTouchMove = { _: dynamic -> } // dummy
@@ -304,11 +382,13 @@ internal fun weChatMain() {
         handleTouchMove = { event: dynamic -> this@page._handleTouchMove(event) }
         handleTouchCancel = { event: dynamic -> this@page._handleTouchCancel(event) }
         handleTouchEnd = { event: dynamic -> this@page._handleTouchEnd(event) }
+
+        handleWheel = { event: dynamic -> WxGlobals.canvas.onwheel(WxWheelEvent(event)) }
     })
 }
 
 private fun queryWxElementById(id: String, handler: (dynamic) -> Unit) {
-    js("wx").createSelectorQuery()
+    Wx.wx.createSelectorQuery()
         .select("#$id")
         .node { res -> handler(res.node) }
         .exec()

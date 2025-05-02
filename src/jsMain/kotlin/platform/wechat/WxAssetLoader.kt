@@ -2,27 +2,29 @@ package platform.wechat
 
 import de.fabmax.kool.AssetLoader
 import de.fabmax.kool.AssetRef
+import de.fabmax.kool.Assets
 import de.fabmax.kool.LoadedAsset
-import de.fabmax.kool.MimeType
 import de.fabmax.kool.math.Vec2i
 import de.fabmax.kool.platform.ImageTextureData
 import de.fabmax.kool.util.Uint8BufferImpl
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.await
 import org.khronos.webgl.ArrayBuffer
 import org.khronos.webgl.Uint8Array
 import org.w3c.dom.HTMLImageElement
 import org.w3c.dom.ImageBitmap
 import org.w3c.dom.ImageData
+import platform.Wx
 import platform.jsObj
-import platform.wxPage
+import kotlin.js.Promise
 
-class WxAssetLoader(val basePath: String) : AssetLoader() {
+class WxAssetLoader(val assetsRoot: String, val cdnRoot: String) : AssetLoader() {
     override suspend fun loadBlob(ref: AssetRef.Blob): LoadedAsset.Blob {
         val deferred = CompletableDeferred<Result<ArrayBuffer>>()
-        js("wx").getFileSystemManager().readFile(jsObj {
-            val pageBase = (wxPage.route as String)
-                .run { if (contains('/')) substring(0..<lastIndexOf('/')) else "" }
-            filePath = if (ref.isHttp) ref.path else "${pageBase}/${basePath}/${ref.path}"
+        val path = transformPath(ref.path, pageLocal = false)
+        Wx.wx.getFileSystemManager().readFile(jsObj {
+            filePath = path
             success = { res: dynamic ->
                 deferred.complete(Result.success(res.data))
             }
@@ -35,7 +37,7 @@ class WxAssetLoader(val basePath: String) : AssetLoader() {
 
     override suspend fun loadImage2d(ref: AssetRef.Image2d): LoadedAsset.Image2d {
         val resolveSz = ref.resolveSize
-        val result = loadImageData(ref.path, ref.isHttp, resolveSz).map {
+        val result = loadImageData(transformPath(ref.path), resolveSz).map {
             ImageTextureData(
                 it.unsafeCast<ImageBitmap>(), // ImageData is mostly compatible with ImageBitmap
                 trimAssetPath(ref.path),
@@ -57,37 +59,65 @@ class WxAssetLoader(val basePath: String) : AssetLoader() {
         throw NotImplementedError("loadAudio")
     }
 
-    private suspend fun loadImageData(path: String, isHttp: Boolean, resize: Vec2i?): Result<ImageData> {
-        val mime = MimeType.forFileName(path)
-        val prefixedUrl = if (isHttp) path else "${basePath}/${path}"
+    private suspend fun loadImageData(path: String, resize: Vec2i?): Result<ImageData> {
+        val deferred = CompletableDeferred<ImageData>()
+        val canvas = Wx.wx.createOffscreenCanvas(jsObj { type = "2d" })
+        val img = canvas.createImage().unsafeCast<HTMLImageElement>()
+        img.onload = {
+            val size = resize ?: Vec2i(img.width, img.height)
+            canvas.width = size.x
+            canvas.height = size.y
+            val canvasCtx = canvas.getContext("2d")
+            canvasCtx.drawImage(img, 0, 0, size.x, size.y)
+            deferred.complete(canvasCtx.getImageData(0, 0, size.x, size.y).unsafeCast<ImageData>())
+        }
+        img.onerror = { message, source, lineno, colno, error ->
+            deferred.completeExceptionally(IllegalStateException("Failed loading tex from $path: msg=$message; src=$source; lineno=$lineno; colno=$colno; error=$error"))
+        }
+        img.asDynamic().webp = true // doesn't really seem to work
+        img.src = path
 
-        if (mime != MimeType.IMAGE_SVG) {
-            // raster image type -> fetch blob and create ImageBitmap directly
-            val deferred = CompletableDeferred<ImageData>()
-            val canvas = js("wx").createOffscreenCanvas(jsObj { type = "2d" })
-            val img = canvas.createImage().unsafeCast<HTMLImageElement>()
-            img.onload = {
-                val size = resize ?: Vec2i(img.width, img.height)
-                canvas.width = size.x
-                canvas.height = size.y
-                val canvasCtx = canvas.getContext("2d")
-                canvasCtx.drawImage(img, 0, 0, size.x, size.y)
-                deferred.complete(canvasCtx.getImageData(0, 0, size.x, size.y).unsafeCast<ImageData>())
-            }
-            img.onerror = { _, _, _, _, _ ->
-                deferred.completeExceptionally(IllegalStateException("Failed loading tex from $prefixedUrl"))
-            }
-            img.src = prefixedUrl
+        return try {
+            Result.success(deferred.await())
+        } catch (e: CancellationException) {
+            throw e
+        } catch (t: Exception) {
+            Result.failure(t)
+        }
+    }
 
-            return try {
-                Result.success(deferred.await())
-            } catch (t: Throwable) {
-                Result.failure(t)
+    private suspend fun transformPath(path: String, pageLocal: Boolean = true): String {
+        var path = path
+
+        if (Assets.isHttpAsset(path))
+            return path
+
+        if (path.startsWith("cdn")) {
+            val cloud = checkNotNull(Wx.cloud()) { "WX cloud not available" }
+            try {
+                val result = (cloud.getTempFileURL(jsObj {
+                    fileList = arrayOf(jsObj {
+                        fileID = "cloud://${Wx.CLOUD_ENV_ID}.${Wx.CLOUD_STORAGE_ID}/$cdnRoot/$path"
+                        maxAge = 24 * 3600
+                    })
+                }) as Promise<dynamic>).await().fileList[0]
+                if (result.status !== 0)
+                    throw RuntimeException("Failed to get CDN asset temp URL for $path: ${result.status} (${result.errMsg})")
+                return result.tempFileURL
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                throw RuntimeException("Failed to get CDN asset temp URL for $path: $e", cause = e)
             }
         } else {
-            // svg image -> use an Image element to convert it to an ImageBitmap
-            throw NotImplementedError("loadImageBitmap: svg")
+            path = "$assetsRoot/$path"
+            if (!pageLocal) {
+                val pageBase = (Wx.page.route as String)
+                    .run { if (contains('/')) substring(0..<lastIndexOf('/')) else "" }
+                path = "$pageBase/$path"
+            }
         }
+        return path
     }
 }
 

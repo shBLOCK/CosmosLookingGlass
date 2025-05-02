@@ -1,5 +1,7 @@
 package universe.content
 
+import de.fabmax.kool.Assets
+import platform.platformImg
 import universe.SingletonCelestialBody
 
 class Earth : SingletonCelestialBody<Earth, Earth.Companion>() {
@@ -10,7 +12,7 @@ class Earth : SingletonCelestialBody<Earth, Earth.Companion>() {
 //        setupSimpleSpherical(SolarSystemConsts.EARTH_RADIUS, SolarSystemConsts.EARTH_FLATTENING)
         setupTexturedSpherical(
             SolarSystemConsts.EARTH_RADIUS, SolarSystemConsts.EARTH_FLATTENING,
-            "textures/celestial_body/earth/color.png"
+            Assets.platformImg("textures/celestial_body/earth/color")
         )
     }
 

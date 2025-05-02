@@ -1,5 +1,7 @@
 package universe.content
 
+import de.fabmax.kool.Assets
+import platform.platformImg
 import universe.SingletonCelestialBody
 
 class Mercury : SingletonCelestialBody<Mercury, Mercury.Companion>() {
@@ -10,7 +12,7 @@ class Mercury : SingletonCelestialBody<Mercury, Mercury.Companion>() {
 //        setupSimpleSpherical(SolarSystemConsts.MERCURY_RADIUS, SolarSystemConsts.MERCURY_FLATTENING)
         setupTexturedSpherical(
             SolarSystemConsts.MERCURY_RADIUS, SolarSystemConsts.MERCURY_FLATTENING,
-            "textures/celestial_body/mercury/color.png"
+            Assets.platformImg("textures/celestial_body/mercury/color")
         )
     }
 
@@ -26,7 +28,7 @@ class Venus : SingletonCelestialBody<Venus, Venus.Companion>() {
 //        setupSimpleSpherical(SolarSystemConsts.VENUS_RADIUS, SolarSystemConsts.VENUS_FLATTENING)
         setupTexturedSpherical(
             SolarSystemConsts.VENUS_RADIUS, SolarSystemConsts.VENUS_FLATTENING,
-            "textures/celestial_body/venus/color.png"
+            Assets.platformImg("textures/celestial_body/venus/color")
         )
     }
 
@@ -42,7 +44,7 @@ class Mars : SingletonCelestialBody<Mars, Mars.Companion>() {
 //        setupSimpleSpherical(SolarSystemConsts.MARS_RADIUS, SolarSystemConsts.MARS_FLATTENING)
         setupTexturedSpherical(
             SolarSystemConsts.MARS_RADIUS, SolarSystemConsts.MARS_FLATTENING,
-            "textures/celestial_body/mars/color.png"
+            Assets.platformImg("textures/celestial_body/mars/color")
         )
     }
 
@@ -58,7 +60,7 @@ class Jupiter : SingletonCelestialBody<Jupiter, Jupiter.Companion>() {
 //        setupSimpleSpherical(SolarSystemConsts.JUPITER_RADIUS, SolarSystemConsts.JUPITER_FLATTENING)
         setupTexturedSpherical(
             SolarSystemConsts.JUPITER_RADIUS, SolarSystemConsts.JUPITER_FLATTENING,
-            "textures/celestial_body/jupiter/color.png"
+            Assets.platformImg("textures/celestial_body/jupiter/color")
         )
     }
 
@@ -74,7 +76,7 @@ class Saturn : SingletonCelestialBody<Saturn, Saturn.Companion>() {
 //        setupSimpleSpherical(SolarSystemConsts.SATURN_RADIUS, SolarSystemConsts.SATURN_FLATTENING)
         setupTexturedSpherical(
             SolarSystemConsts.SATURN_RADIUS, SolarSystemConsts.SATURN_FLATTENING,
-            "textures/celestial_body/saturn/color.png"
+            Assets.platformImg("textures/celestial_body/saturn/color")
         )
     }
 
@@ -90,7 +92,7 @@ class Uranus : SingletonCelestialBody<Uranus, Uranus.Companion>() {
 //        setupSimpleSpherical(SolarSystemConsts.URANUS_RADIUS, SolarSystemConsts.URANUS_FLATTENING)
         setupTexturedSpherical(
             SolarSystemConsts.URANUS_RADIUS, SolarSystemConsts.URANUS_FLATTENING,
-            "textures/celestial_body/uranus/color.png"
+            Assets.platformImg("textures/celestial_body/uranus/color")
         )
     }
 
@@ -106,7 +108,7 @@ class Neptune : SingletonCelestialBody<Neptune, Neptune.Companion>() {
 //        setupSimpleSpherical(SolarSystemConsts.NEPTUNE_RADIUS, SolarSystemConsts.NEPTUNE_FLATTENING)
         setupTexturedSpherical(
             SolarSystemConsts.NEPTUNE_RADIUS, SolarSystemConsts.NEPTUNE_FLATTENING,
-            "textures/celestial_body/neptune/color.png"
+            Assets.platformImg("textures/celestial_body/neptune/color")
         )
     }
 
@@ -122,7 +124,7 @@ class Moon : SingletonCelestialBody<Moon, Moon.Companion>() {
 //        setupSimpleSpherical(SolarSystemConsts.MOON_RADIUS, SolarSystemConsts.MOON_FLATTENING)
         setupTexturedSpherical(
             SolarSystemConsts.MOON_RADIUS, SolarSystemConsts.MOON_FLATTENING,
-            "textures/celestial_body/moon/color.png"
+            Assets.platformImg("textures/celestial_body/moon/color")
         )
     }
 
@@ -138,7 +140,7 @@ class Sun : SingletonCelestialBody<Sun, Sun.Companion>() {
 //        setupSimpleSpherical(SolarSystemConsts.SUN_RADIUS, SolarSystemConsts.SUN_FLATTENING)
         setupTexturedSpherical(
             SolarSystemConsts.SUN_RADIUS, SolarSystemConsts.SUN_FLATTENING,
-            "textures/celestial_body/sun/color.png"
+            Assets.platformImg("textures/celestial_body/sun/color")
         )
     }
 

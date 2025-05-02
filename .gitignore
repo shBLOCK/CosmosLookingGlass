@@ -5,7 +5,7 @@
 /kotlin-js-store/
 
 # Deployed assets (see README.md)
-/assets/all/
+/assets/merged/
 /src/jvmMain/resources/assets/
 /src/jsMain/resources/assets/
 /assets/tmp/
