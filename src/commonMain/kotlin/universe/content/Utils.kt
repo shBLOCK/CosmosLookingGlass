@@ -47,7 +47,7 @@ fun CelestialBody.setupTexturedSpherical(
         generate {
             run {
                 val icoGenerator = MeshBuilder.IcoGenerator()
-                icoGenerator.subdivide(5)
+                icoGenerator.subdivide(4)
                 val i0 = geometry.numVertices
                 for (vert in icoGenerator.verts) {
                     vertex {
