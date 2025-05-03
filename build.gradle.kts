@@ -418,9 +418,15 @@ val gen_cubemaps by tasks.registering {
 
     gen(
         "tmp/textures/misc/background_starmap_equirec.png",
-        "tmp/cdn/textures/misc/background_starmap.png"
+        "tmp/cdn/textures/misc/background_starmap_highres.png"
             .also { PlatformMedia.cubemap(File(it)) },
         2048
+    )
+    gen(
+        "tmp/textures/misc/background_starmap_equirec.png",
+        "tmp/textures/misc/background_starmap.png"
+            .also { PlatformMedia.cubemap(File(it), quality = 0.7) },
+        256
     )
 
     doLast { actions.runAll() }

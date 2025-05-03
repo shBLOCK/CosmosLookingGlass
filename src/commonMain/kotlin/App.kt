@@ -3,9 +3,7 @@ import de.fabmax.kool.KoolSystem
 import de.fabmax.kool.modules.ksl.blocks.ColorSpaceConversion
 import de.fabmax.kool.modules.ui2.*
 import de.fabmax.kool.scene.Skybox
-import de.fabmax.kool.util.DebugOverlay
-import de.fabmax.kool.util.MsdfFont
-import de.fabmax.kool.util.debugOverlay
+import de.fabmax.kool.util.*
 import dynamics.SolarSystemKeplerModel3000BC3000AD
 import dynamics.UniverseDynModelCollection
 import kotlinx.coroutines.launch
@@ -20,6 +18,7 @@ import universe.SingletonCelestialBody
 import universe.Universe
 import universe.content.*
 import utils.IntFract
+import utils.SingleColorTextureCube
 import utils.loadTextureCube
 
 class App() {
@@ -41,9 +40,25 @@ class App() {
         )
 
         Assets.launch {
-            Assets.defaultLoader.loadTextureCube(Assets.platformImg("cdn/textures/misc/background_starmap"))
+            val skybox = Skybox.cube(
+                SingleColorTextureCube(Color.BLACK),
+                1F,
+                ColorSpaceConversion.AsIs,
+                scene.depthMode
+            ).also { root += it }
+            Assets.defaultLoader.loadTextureCube(Assets.platformImg("textures/misc/background_starmap"))
                 .onSuccess {
-                    root += Skybox.cube(it, 1F, ColorSpaceConversion.AsIs, scene.depthMode)
+                    launchOnMainThread {
+                        skybox.skyboxShader.skies[0].get()!!.release()
+                        skybox.skyboxShader.setSingleSky(it)
+                    }
+                }
+            Assets.defaultLoader.loadTextureCube(Assets.platformImg("cdn/textures/misc/background_starmap_highres"))
+                .onSuccess {
+                    launchOnMainThread {
+                        skybox.skyboxShader.skies[0].get()!!.release()
+                        skybox.skyboxShader.setSingleSky(it)
+                    }
                 }
         }
 
