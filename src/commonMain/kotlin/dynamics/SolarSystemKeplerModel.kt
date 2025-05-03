@@ -27,7 +27,8 @@ abstract class SolarSystemKeplerModelBase : SolarSystemOrientatedModel() {
             ).filter { (model, objMass) -> objMass > 1e24 }, // ignore small mass objects
             mass = SolarSystemConsts.SUN_MASS,
             barycenter = Vec3d.ZERO,
-            gravityPropagationSpeed = SPEED_OF_LIGHT
+//            gravityPropagationSpeed = SPEED_OF_LIGHT
+            gravityPropagationSpeed = 0.0
         )
     }
 }
