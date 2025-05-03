@@ -21,9 +21,10 @@ class IAUOrientationModel(
 
         paramUpdater(time.j2000.days, time.j2000.centuries)
         result.setIdentity()
-        result.rotate(W.deg, Vec3d.Z_AXIS)
-        result.rotate((90.0 - d0).deg, Vec3d.X_AXIS)
+        // TODO: validate accuracy
         result.rotate((a0 + 90.0).deg, Vec3d.Z_AXIS)
+        result.rotate((90.0 - d0).deg, Vec3d.X_AXIS)
+        result.rotate(W.deg, Vec3d.Z_AXIS)
         return result
     }
 
