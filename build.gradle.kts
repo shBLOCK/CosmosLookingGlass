@@ -327,6 +327,7 @@ val gen_fonts by tasks.registering {
 
     doLast { actions.runAll() }
 }
+gen_fonts.get()
 
 fun ExecSpec.prepFileDir(file: File) = Unit.also {
     (if (!file.isAbsolute) workingDir.resolve(file) else file).ensureParentDirsCreated()
@@ -356,6 +357,7 @@ val gen_preprocessImgs by tasks.registering {
 
     doLast { actions.runAll() }
 }
+gen_preprocessImgs.get()
 
 val gen_cubemaps by tasks.registering {
     group = "assets"
@@ -423,6 +425,7 @@ val gen_cubemaps by tasks.registering {
 
     doLast { actions.runAll() }
 }
+gen_cubemaps.get()
 
 val gen_mediaPlatformFormat by tasks.registering {
     group = "assets"
@@ -482,6 +485,7 @@ val gen_mediaPlatformFormat by tasks.registering {
         pool.awaitTermination(10L, TimeUnit.HOURS)
     }
 }
+gen_mediaPlatformFormat.get()
 
 @Suppress("unused")
 val cleanGeneratedAssets by tasks.registering {
