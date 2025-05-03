@@ -1,7 +1,8 @@
 package ui
 
+import de.fabmax.kool.KoolContext
+import de.fabmax.kool.input.InputStack
 import de.fabmax.kool.input.Pointer
-import de.fabmax.kool.input.PointerInput
 import de.fabmax.kool.input.PointerState
 import de.fabmax.kool.math.*
 import de.fabmax.kool.modules.ui2.*
@@ -150,20 +151,7 @@ class MainCameraControl(val view: RenderPass.View) : BaseReleasable() {
     private val pointers = mutableListOf<Pointer>()
     private var lastGesturePtrPair: Pair<Vec2d, Vec2d>? = null
 
-    private fun handlePointerScroll(event: PointerEvent) {
-        val pointer = event.pointer
-        with(targetParams) {
-            if (pointer.scroll.y != 0F) {
-                val zoom = pointer.scroll.y.toDouble() * -SCROLL_ZOOM_SPEED
-                center -= sdrOnMainPlaneLocal(pointer.sdr) * zoom
-                halfSize *= 1.0 + zoom
-            }
-        }
-    }
-
-    private fun handlePointer(pointerState: PointerState = PointerInput.pointerState) {
-        pointerState.getActivePointers(pointers)
-
+    private fun handlePointers() {
         // single pointer
         if (pointers.size == 1) {
             val pointer = pointers[0]
@@ -176,6 +164,12 @@ class MainCameraControl(val view: RenderPass.View) : BaseReleasable() {
                         y = -y
                     }
                     center -= sdrOnMainPlaneLocal(translation)
+                }
+
+                if (pointer.scroll.y != 0F) {
+                    val zoom = exp(pointer.scroll.y.toDouble() * SCROLL_ZOOM_SPEED)
+                    center += sdrOnMainPlaneLocal(pointer.sdr) * (1.0 - 1.0 / zoom)
+                    halfSize /= zoom
                 }
 
                 if (pointer.isLeftButtonDown) {
@@ -211,17 +205,17 @@ class MainCameraControl(val view: RenderPass.View) : BaseReleasable() {
                         center -= sdrOnMainPlaneLocal(translation)
                     }
 
-                    val zoom = 1.0 - currentDist / lastDist
-                    if (!zoom.isFuzzyZero()) {
-                        center -= sdrOnMainPlaneLocal(currentCenter) * zoom
-                        halfSize *= 1.0 + zoom
+                    val zoom = currentDist / lastDist
+                    if (!isFuzzyEqual(zoom, 1.0)) {
+                        center += sdrOnMainPlaneLocal(currentCenter) * (1.0 - 1.0 / zoom)
+                        halfSize /= zoom
                     }
 
                     val rot = (currentAngle - lastAngle).wrap(-PI, PI)
                     val axis = sdrRayLocal(currentCenter)
                         .also { it.origin.add(center) }
                         .also { it.direction.norm() }
-                    orientation = MutableQuatD(orientation).rotate(rot.rad, axis.direction)
+                    orientation = MutableQuatD().rotate(rot.rad, axis.direction).mul(orientation)
                     center = MutableVec3d(center).rotate(rot.rad, axis)
                 }
             }
@@ -232,12 +226,29 @@ class MainCameraControl(val view: RenderPass.View) : BaseReleasable() {
         }
     }
 
+    private var dragging = false
+
+    init {
+        val inputHandler = object : InputStack.InputHandler("MainCameraControl") {
+            override fun handlePointer(pointerState: PointerState, ctx: KoolContext) {
+                pointers.clear()
+                for (ptr in pointerState.pointers) {
+                    if (ptr.isValid && (!ptr.isConsumed() || dragging))
+                        pointers += ptr
+                }
+                handlePointers()
+                dragging = false
+            }
+        }
+        InputStack.pushBottom(inputHandler)
+        onRelease { InputStack.remove(inputHandler) }
+    }
+
     fun attachTo(viewport: HudViewport) = viewport.apply {
         if (!isFuzzyEqual(rect, view.viewport.rect))
             this@MainCameraControl.logW { "Actual viewport (${view.viewport.rect}) doesn't match HudViewport ($rect), expect weird behaviors." }
-        modifier.onDrag { handlePointer() }
-        modifier.onClick { handlePointer() }
-        modifier.onWheelY += ::handlePointerScroll
+
+        modifier.onDrag { dragging = true }
     }
 
     fun snapToCurrent() = targetParams.set(params)
