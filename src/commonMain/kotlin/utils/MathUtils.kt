@@ -28,6 +28,15 @@ fun MutableVec3d.expDecaySnapping(target: Vec3d, decay: Double, deltaT: Float = 
     return this
 }
 
+fun MutableQuatD.expDecaySnapping(target: QuatD, decay: Double, deltaT: Float = Time.deltaT): MutableQuatD {
+    if (isFuzzyEqual(target)) {
+        set(target)
+    } else {
+        mix(target, exp(-decay * deltaT), result = this)
+    }
+    return norm()
+}
+
 val Int.nextPowerOfTwo get() = if (this and (this - 1) == 0) this else 1 shl (32 - countLeadingZeroBits())
 val Int.prevPowerOfTwo get() = if (this and (this - 1) == 0) this else 1 shl (32 - countLeadingZeroBits() - 1)
 
@@ -108,3 +117,21 @@ fun Camera.projectSphere(center: Vec3d, radius: Double) = when (this) {
 
 inline fun Camera.projectSphere(sphere: Sphere) = projectSphere(sphere.center, sphere.radius)
 inline fun RenderPass.View.projectSphereViewport(sphere: Sphere) = camera.projectSphere(sphere).on(viewport)
+
+fun rayLineSegmentIntersectionUnchecked(ray: RayD, lineA: Vec3d, lineB: Vec3d): Vec3d {
+    if (lineA.isFuzzyEqual(lineB)) return lineA
+
+    val v = lineB - lineA
+    val w0 = ray.origin - lineA
+
+    val a = ray.direction.sqrLength()
+    val b = ray.direction dot v
+    val c = v.sqrLength()
+    val d1 = ray.direction.dot(w0)
+    val d2 = v.dot(w0)
+
+    val denom = a * c - b * b
+    val t = (b * d2 - c * d1) / denom
+
+    return ray.origin + ray.direction * t
+}

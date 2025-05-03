@@ -1,5 +1,7 @@
 import de.fabmax.kool.Assets
 import de.fabmax.kool.KoolSystem
+import de.fabmax.kool.math.QuatD
+import de.fabmax.kool.math.Vec3d
 import de.fabmax.kool.modules.ksl.blocks.ColorSpaceConversion
 import de.fabmax.kool.modules.ui2.*
 import de.fabmax.kool.scene.Skybox
@@ -14,12 +16,15 @@ import ui.TimeControl
 import ui.TrailManager
 import ui.hud.HudViewport
 import ui.hud.UniverseCelestialBodyHudButtons
+import universe.CelestialBody
 import universe.SingletonCelestialBody
 import universe.Universe
 import universe.content.*
 import utils.IntFract
 import utils.SingleColorTextureCube
 import utils.loadTextureCube
+
+private const val CAMERA_DEFAULT_HALF_SIZE = 8e10
 
 class App() {
     val koolCtx = KoolSystem.requireContext()
@@ -65,17 +70,25 @@ class App() {
 //        root.addDebugAxisIndicator(1e11)
     }
 
-    val cameraControl = MainCameraControl(universe.scene.mainRenderPass.defaultView)
-        .apply {
-            targetParams.halfSize = 24e7
-//            targetParams.halfSize = 10e5
-            universe.scene.onUpdate {
-//                //TODO: TEMP
-//                val center = universe[Earth]!!.dynModel!!.position()
-//                targetParams.center.set(center)
-//                params.center.set(center)
-            }
-        }
+    val cameraControl = MainCameraControl(universe.scene.mainRenderPass.defaultView).apply {
+        // initial zoom-in animation
+        params.halfSize = CAMERA_DEFAULT_HALF_SIZE * 1e3
+        startChangeTrackingFocusAnimation(CAMERA_DEFAULT_HALF_SIZE, durationLookAt = 0.0, durationZoom = 4.0)
+    }
+    private var cameraTrackingFocus: CelestialBody? = null
+
+    private fun updateCameraTrackingFocus() {
+        cameraControl.trackingFocusPos.set(cameraTrackingFocus?.position ?: Vec3d.ZERO)
+        cameraControl.trackingFocusRot.set(cameraTrackingFocus?.orientation ?: QuatD.IDENTITY)
+    }
+
+    fun changeCameraTrackingFocusTo(cb: CelestialBody?) {
+        cameraTrackingFocus = cb
+        updateCameraTrackingFocus()
+        cameraControl.startChangeTrackingFocusAnimation(
+            halfSize = if (cb != null) cb.outlineRadius * 2.0 else CAMERA_DEFAULT_HALF_SIZE
+        )
+    }
 
     val trailManager = TrailManager().apply {
         universe.root += mainTrailsRoot
@@ -137,6 +150,7 @@ class App() {
                 }
             }
         }
+        onDoubleClick = { changeCameraTrackingFocusTo(it) }
     }
     // endregion
 
@@ -156,9 +170,10 @@ class App() {
         timeControl.update()
         universe.time = time
 
-        cameraControl.update()
-
         universe.update()
+
+        updateCameraTrackingFocus()
+        cameraControl.update()
 
         trailManager.update(time)
 

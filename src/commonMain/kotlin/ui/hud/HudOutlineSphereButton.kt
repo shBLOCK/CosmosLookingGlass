@@ -112,6 +112,7 @@ class HudOutlineSphereButtonNode(override val stateStore: KeyedStateStore, paren
         }
 
         val ptr = event.pointer
+        if (ptr.isConsumed()) return
         if (pressed) ptr.consume()
         if (ptr.isLeftButtonReleased) pressed = false
         if (event.position.distance(MutableVec2f(widthPx, heightPx) / 2F) < modifier.radius.px) {

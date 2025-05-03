@@ -4,9 +4,7 @@ import de.fabmax.kool.input.Pointer
 import de.fabmax.kool.input.PointerInput
 import de.fabmax.kool.input.PointerState
 import de.fabmax.kool.math.*
-import de.fabmax.kool.modules.ui2.PointerEvent
-import de.fabmax.kool.modules.ui2.onClick
-import de.fabmax.kool.modules.ui2.onDrag
+import de.fabmax.kool.modules.ui2.*
 import de.fabmax.kool.pipeline.RenderPass
 import de.fabmax.kool.scene.OrthographicCamera
 import de.fabmax.kool.scene.PerspectiveCamera
@@ -16,10 +14,7 @@ import de.fabmax.kool.util.Viewport
 import de.fabmax.kool.util.logW
 import ui.hud.HudViewport
 import utils.*
-import kotlin.math.PI
-import kotlin.math.exp
-import kotlin.math.max
-import kotlin.math.tan
+import kotlin.math.*
 
 class MainCameraControl(val view: RenderPass.View) : BaseReleasable() {
     companion object {
@@ -39,6 +34,119 @@ class MainCameraControl(val view: RenderPass.View) : BaseReleasable() {
     val targetParams = Params()
     val params = Params()
 
+    val trackingFocusPos = MutableVec3d()
+    val trackingFocusRot = MutableQuatD()
+    private val lastTrackingFocusRot = MutableQuatD()
+    var trackingFocusFollowRot = false
+        set(value) {
+            field = value
+            startFollowRotAnimation.start(value.toFloat())
+        }
+    private val startFollowRotAnimation = AnimatedFloatBidir(1F)
+    var startFollowRotAnimationDuration
+        get() = startFollowRotAnimation.fwdDuration
+        set(value) {
+            startFollowRotAnimation.fwdDuration = value
+            startFollowRotAnimation.bwdDuration = value
+        }
+
+    // cfta: change tracking focus animation
+    // use bidir versions which can be reset manually
+    private var ctfaLookAtAnimation = AnimatedFloat(1F, initValue = 1F)
+    private var ctfaZoomAnimation = AnimatedFloat(1F, initValue = 1F)
+    private val ctfaInitialParams = Params()
+    private var ctfaFinalHalfSize = 0.0
+
+    fun startChangeTrackingFocusAnimation(
+        halfSize: Double,
+        durationLookAt: Double = 1.0,
+        durationZoom: Double = 2.0
+    ) {
+        ctfaFinalHalfSize = halfSize
+        ctfaLookAtAnimation = AnimatedFloat(durationLookAt.toFloat(), 0F).apply { start() }
+        ctfaZoomAnimation = AnimatedFloat(durationZoom.toFloat(), 0F)
+        startFollowRotAnimation.start(0F)
+        startFollowRotAnimation.value = 0F
+
+        lastTrackingFocusRot.set(trackingFocusRot)
+
+        snapToCurrent()
+        ctfaInitialParams.set(params)
+        // zero out local pos & rot
+        ctfaInitialParams.centerOffset += ctfaInitialParams.localCenter
+        ctfaInitialParams.localCenter = Vec3d.ZERO
+        ctfaInitialParams.orientationOffset *= ctfaInitialParams.localOrientation
+        ctfaInitialParams.localOrientation = QuatD.IDENTITY
+    }
+
+    private fun updateTrackingFocus() {
+        if (ctfaLookAtAnimation.isActive || ctfaZoomAnimation.isActive) {
+            ctfaLookAtAnimation.progress(Time.deltaT)
+
+            val tmpVec3d = MutableVec3d()
+
+            // calculate final camera orientation
+            val camPos = ctfaInitialParams.centerOffset - ctfaInitialParams.dir * ctfaInitialParams.camDist
+            val finalCamLook = trackingFocusPos - camPos
+            val oriMat = MutableMat3d().rotate(ctfaInitialParams.orientationOffset)
+            oriMat[2] = tmpVec3d.set(finalCamLook).norm().mul(-1.0)
+            oriMat[0] = oriMat[1].cross(oriMat[2], tmpVec3d)
+            oriMat[1] = oriMat[2].cross(oriMat[0], tmpVec3d)
+            val finalOrientation = oriMat.getRotation()
+
+            // interpolate orientation
+            val tLookAt = smoothStep(0F, 1F, ctfaLookAtAnimation.value).toDouble()
+            val oriQuat =
+                ctfaInitialParams.orientationOffset.mix(finalOrientation, tLookAt)
+            oriMat.setIdentity().rotate(oriQuat)
+            val dir = oriMat[2] * -1.0
+
+            // start zoom animation when cam sweep is almost done
+            if (ctfaZoomAnimation.value == 0F) {
+                if ((dir dot finalCamLook) / finalCamLook.length() > 0.99)
+                    ctfaZoomAnimation.start()
+            }
+            ctfaZoomAnimation.progress(Time.deltaT)
+
+            // calculate center: find the point on the camera sweep path that intersects with camera look ray
+            val center = rayLineSegmentIntersectionUnchecked(
+                RayD(camPos, dir),
+                ctfaInitialParams.centerOffset,
+                trackingFocusPos
+            )
+
+            // zoom
+            val tZoom = smoothStep(0F, 1F, ctfaZoomAnimation.value).toDouble()
+            // the raw half-size is the half-size required to make camera position not change during sweep
+            val rawHalfSizeExp = ln(ctfaInitialParams.halfSize * (center.distance(camPos) / ctfaInitialParams.camDist))
+            val halfSize = exp(mix(rawHalfSizeExp, ln(ctfaFinalHalfSize), tZoom))
+
+            // apply
+            targetParams.set(ctfaInitialParams)
+            targetParams.orientationOffset = oriQuat
+            targetParams.centerOffset = center
+            targetParams.halfSize = halfSize
+
+            // trigger ctfaStartFollowRotAnimation when zoom is almost done
+            if (trackingFocusFollowRot && startFollowRotAnimation.value == 0F) {
+                if (ctfaZoomAnimation.value > 0.9)
+                    startFollowRotAnimation.start(1F)
+            }
+
+            snapToTarget()
+        } else {
+            targetParams.centerOffset = Vec3d(trackingFocusPos)
+        }
+
+        val deltaRot = MutableQuatD(trackingFocusRot).mul(lastTrackingFocusRot.invert())
+        lastTrackingFocusRot.set(trackingFocusRot)
+        startFollowRotAnimation.progress(Time.deltaT)
+        targetParams.orientationOffset *=
+            if (startFollowRotAnimation.value < 1F)
+                QuatD.IDENTITY.mix(deltaRot, startFollowRotAnimation.value.toDouble())
+            else deltaRot
+    }
+
     private val pointers = mutableListOf<Pointer>()
     private var lastGesturePtrPair: Pair<Vec2d, Vec2d>? = null
 
@@ -47,7 +155,7 @@ class MainCameraControl(val view: RenderPass.View) : BaseReleasable() {
         with(targetParams) {
             if (pointer.scroll.y != 0F) {
                 val zoom = pointer.scroll.y.toDouble() * -SCROLL_ZOOM_SPEED
-                center.subtract(sdrOnMainPlaneLocal(pointer.sdr) * zoom)
+                center -= sdrOnMainPlaneLocal(pointer.sdr) * zoom
                 halfSize *= 1.0 + zoom
             }
         }
@@ -67,14 +175,14 @@ class MainCameraControl(val view: RenderPass.View) : BaseReleasable() {
                         mul(2.0)
                         y = -y
                     }
-                    center.subtract(sdrOnMainPlaneLocal(translation))
+                    center -= sdrOnMainPlaneLocal(translation)
                 }
 
                 if (pointer.isLeftButtonDown) {
                     val rot = pointer.delta.toMutableVec2d()
                         .mul(pointer.windowScale.toDouble() * DRAG_ROTATE_SPEED)
                         .apply { y = -y }
-                    orientation = orientation.rotateByEulers(Vec3d(rot.y, -rot.x, 0.0), EulerOrder.ZYX)
+                    orientation = MutableQuatD(orientation).rotateByEulers(Vec3d(rot.y, -rot.x, 0.0), EulerOrder.ZYX)
                 }
 
                 if (pointer.isMiddleButtonClicked) {
@@ -100,12 +208,12 @@ class MainCameraControl(val view: RenderPass.View) : BaseReleasable() {
 
                     val translation = currentCenter - lastCenter
                     if (!translation.isFuzzyEqual(Vec2d.ZERO)) {
-                        center.subtract(sdrOnMainPlaneLocal(translation))
+                        center -= sdrOnMainPlaneLocal(translation)
                     }
 
                     val zoom = 1.0 - currentDist / lastDist
                     if (!zoom.isFuzzyZero()) {
-                        center.subtract(sdrOnMainPlaneLocal(currentCenter) * zoom)
+                        center -= sdrOnMainPlaneLocal(currentCenter) * zoom
                         halfSize *= 1.0 + zoom
                     }
 
@@ -113,8 +221,8 @@ class MainCameraControl(val view: RenderPass.View) : BaseReleasable() {
                     val axis = sdrRayLocal(currentCenter)
                         .also { it.origin.add(center) }
                         .also { it.direction.norm() }
-                    orientation = orientation.rotate(rot.rad, axis.direction)
-                    center.rotate(rot.rad, axis)
+                    orientation = MutableQuatD(orientation).rotate(rot.rad, axis.direction)
+                    center = MutableVec3d(center).rotate(rot.rad, axis)
                 }
             }
 
@@ -136,31 +244,17 @@ class MainCameraControl(val view: RenderPass.View) : BaseReleasable() {
     fun snapToTarget() = params.set(targetParams)
 
     fun update() {
-        targetParams.nearClipDist = targetParams.halfSize / tan(max(targetParams.halfFov.rad, DEFAULT_HALF_FOV.rad)) - 1
+        updateTrackingFocus()
 
         with(params) {
             // smooth motion
             halfFov = halfFov.rad.expDecaySnapping(targetParams.halfFov.rad, 12.0).rad
             halfSize = halfSize.expDecaySnapping(targetParams.halfSize, 24.0)
-            nearClipDist = nearClipDist.expDecaySnapping(targetParams.nearClipDist, 24.0)
-            center.expDecaySnapping(targetParams.center, 24.0)
-            orientation = orientation
-                .mix(targetParams.orientation, exp(-8.0 * Time.deltaT), result = orientation)
-                .norm()
             farClipDist = targetParams.farClipDist
-
-            if (halfFov.rad > MIN_HALF_FOV_RAD) {
-                var d = halfSize / halfFov.tan
-
-                if (true || !camera.isZeroToOneDepth) {
-                    val nearClip = d - nearClipDist
-                    val farClip = d + farClipDist
-                    // avoid too small near clip values to avoid depth precision artifacts in legacy depth mode
-                    if (farClip / nearClip > MAX_FAR_TO_NEAR_RATIO) {
-                        nearClipDist = d - farClip / MAX_FAR_TO_NEAR_RATIO
-                    }
-                }
-            }
+            centerOffset = targetParams.centerOffset // no smoothing
+            localCenter = MutableVec3d(localCenter).expDecaySnapping(targetParams.localCenter, 24.0)
+            orientationOffset = targetParams.orientationOffset // no smoothing
+            localOrientation = MutableQuatD(localOrientation).expDecaySnapping(targetParams.localOrientation, 8.0)
         }
 
         params.apply()
@@ -185,53 +279,67 @@ class MainCameraControl(val view: RenderPass.View) : BaseReleasable() {
         /** Single side fov (half of normal fov) */
         var halfFov: AngleD = 35.0.deg
 
-        /** Center of the camera control. The camera will always "look at" this position. */
-        val center = MutableVec3d()
-
         /** Half vertical size of the "main plane" (the plane in the camera frustum that is perpendicular to [dir] and passes through [center]) */
         var halfSize: Double = 8e10
 
-        /** Distance between [center] and near clip plane */
-        var nearClipDist = halfSize / DEFAULT_HALF_FOV.tan - 1.0
+        /** Distance between [center] and the camera position (or the near plane for small fov) */
+        val camDist get() = halfSize / tan(max(halfFov.rad, DEFAULT_HALF_FOV.rad))
 
         /** Distance between [center] and far clip plane */
         var farClipDist = 1e13
 
-        var orientation = MutableQuatD()
+        var centerOffset = Vec3d.ZERO
             set(value) {
                 field = value
-                orientationMat.setIdentity().rotate(value)
+                _center.set(value).add(localCenter)
+            }
+        var localCenter = Vec3d.ZERO
+            set(value) {
+                field = value
+                _center.set(centerOffset).add(value)
+            }
+
+        private val _center = MutableVec3d()
+
+        /** Center of the camera control. The camera will always "look at" this position. */
+        var center: Vec3d
+            get() = _center
+            set(value) {
+                localCenter = value - centerOffset
+            }
+
+        var orientationOffset = QuatD.IDENTITY
+            set(value) {
+                field = value
+                _orientation.set(value).mul(localOrientation)
+            }
+        var localOrientation = QuatD.IDENTITY
+            set(value) {
+                field = value
+                _orientation.set(orientationOffset).mul(value)
+            }
+
+        private val _orientation = MutableQuatD()
+        var orientation: QuatD
+            get() = _orientation
+            set(value) {
+                localOrientation = orientationOffset.inverted().mul(value)
             }
 
         fun set(target: Params) {
             halfFov = target.halfFov
-            nearClipDist = target.nearClipDist
             farClipDist = target.farClipDist
-            center.set(target.center)
             halfSize = target.halfSize
-            orientation = orientation.set(target.orientation)
+            centerOffset = target.centerOffset
+            localCenter = target.localCenter
+            orientationOffset = target.orientationOffset
+            localOrientation = target.localOrientation
         }
 
-        var orientationMat = MutableMat3d()
-            set(value) {
-                field = value
-                value.getRotation(orientation)
-            }
-        inline var dir: Vec3d
-            get() = orientationMat[2] * -1.0
-            set(value) {
-                orientationMat = orientationMat.also { it[2] = value * -1.0 }
-            }
-        inline var up
-            get() = orientationMat[1]
-            set(value) {
-                orientationMat = orientationMat.also { it[1] = value }
-            }
-        inline var right
-            get() = orientationMat[0]
-            set(value) {
-                orientationMat = orientationMat.also { it[0] = value }
-            }
+        val orientationMat: Mat3d get() = MutableMat3d().rotate(orientation)
+        inline val dir get() = orientationMat[2] * -1.0
+        inline val up get() = orientationMat[1]
+        inline val right get() = orientationMat[0]
 
         fun apply() {
             if (halfFov.rad <= MIN_HALF_FOV_RAD) {
@@ -257,16 +365,23 @@ class MainCameraControl(val view: RenderPass.View) : BaseReleasable() {
                         cam.top = halfSize.toFloat()
                         cam.bottom = -halfSize.toFloat()
                         cam.clipNear = 0F
-                        cam.clipFar = (nearClipDist + farClipDist).toFloat()
-                        cam.position.set(center + dir * -nearClipDist)
+                        cam.clipFar = (camDist + farClipDist).toFloat()
+                        cam.position.set(center + dir * -camDist)
                     }
 
                     is PerspectiveCamera -> {
                         cam.fovY = (halfFov.rad * 2.0).toFloat().rad
                         val d = halfSize / halfFov.tan
                         cam.position.set(center + dir * -d)
-                        cam.clipNear = (d - nearClipDist).toFloat()
+                        cam.clipNear = max(d - camDist, 1.0).toFloat()
                         cam.clipFar = (d + farClipDist).toFloat()
+
+                        if (true || !camera.isZeroToOneDepth) {
+                            // avoid too small near clip values to avoid depth precision artifacts in legacy depth mode
+                            if (cam.clipFar / cam.clipNear > MAX_FAR_TO_NEAR_RATIO) {
+                                cam.clipNear = (cam.clipFar / MAX_FAR_TO_NEAR_RATIO).toFloat()
+                            }
+                        }
                     }
                 }
             }
@@ -278,15 +393,15 @@ class MainCameraControl(val view: RenderPass.View) : BaseReleasable() {
         fun sdrRayLocal(sdr: Vec2d): RayD {
             if (halfFov.rad > MIN_HALF_FOV_RAD) {
                 val d = halfSize / halfFov.tan
-                val near = d - nearClipDist
+                val near = max(d - camDist, 0.0)
                 val far = d + farClipDist
                 val point = sdrOnMainPlaneLocal(sdr)
-                val nearPoint = point * (near / d) - dir * nearClipDist
+                val nearPoint = point * (near / d) - dir * camDist
                 val farPoint = point * (far / d) + dir * farClipDist
                 return RayD(nearPoint, farPoint - nearPoint)
             } else {
                 val point = sdrOnMainPlaneLocal(sdr)
-                return RayD(point - dir * nearClipDist, dir * (nearClipDist + farClipDist))
+                return RayD(point - dir * camDist, dir * (camDist + farClipDist))
             }
         }
 
